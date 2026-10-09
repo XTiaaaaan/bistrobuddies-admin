@@ -54,11 +54,23 @@ No secrets belong in this repository.
   backend: `POST|PATCH|DELETE /api/admin/products[/:id]`
   (`src/app/core/api/admin-api.service.ts`). Prices are validated
   server-side.
-- **Reads** (dashboard numbers, product list, user list) still go directly to
-  the Firestore client SDK under the existing rules — unchanged behaviour.
-- **Order status transitions** are exposed by the backend
-  (`POST /api/admin/orders/:id/status`) but the order-management UI was
-  planned and not yet built in either repository.
+- **Reads** (dashboard numbers, product list, order list, user list) still go
+  directly to the Firestore client SDK under the existing rules — unchanged
+  behaviour. The API contract has no `GET /api/admin/orders`, so the Orders
+  page reads `orders/{id}` documents live and sorts them client-side.
+- **Order status transitions** go through the backend
+  (`POST /api/admin/orders/:id/status`) from the Orders page
+  (`src/app/pages/admin-orders/`). Allowed moves are checked against the
+  backend's status graph before they are offered; payment status is
+  display-only because only the backend may change it.
+- **Products are single-price**: the form sends one `price`, and the backend
+  keeps the legacy `small/medium/largePrice` fields in sync for
+  compatibility. A legacy tiered document is flattened to its medium price on
+  first save; historic order snapshots are never rewritten.
+- **Product image upload** is not part of the backend contract
+  (`../bistrobuddies-backend/docs/API_CONTRACT.md` §6), so the form sets image
+  URLs only and says so in the UI — `ProductImageUploadService.upload()`
+  throws until that endpoint exists.
 
 See `../integration-docs/` for the API contract and architecture.
 

@@ -54,9 +54,10 @@
                 <p class="product-description">{{ product.description }}</p>
 
                 <div class="price-row">
-                  <span>Small: {{ formatPrice(product.smallPrice) }}</span>
-                  <span>Medium: {{ formatPrice(product.mediumPrice) }}</span>
-                  <span>Large: {{ formatPrice(product.largePrice) }}</span>
+                  <span class="price-main">{{ priceOf(product) }}</span>
+                  @if (tiersLabel(product); as tiers) {
+                    <span class="price-tiers">{{ tiers }}</span>
+                  }
                 </div>
               </div>
 

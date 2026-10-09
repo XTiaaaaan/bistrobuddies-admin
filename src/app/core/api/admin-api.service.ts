@@ -2,7 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Product, ProductInput } from '@shared/models/product.model';
+import { ProductInput } from '@shared/models/product.model';
+import { OrderStatus } from '@shared/models/order.model';
 import { AuthService } from '@shared/services/auth.service';
 
 /** Error raised for backend admin API failures, with the backend status code. */
@@ -17,10 +18,11 @@ export class AdminApiError extends Error {
 }
 
 /**
- * Talks to the BistroBuddies backend for privileged product operations
- * (create, update, delete). The backend verifies the Firebase ID token and
- * confirms the signer's administrator role server-side on every request;
- * the frontend never decides authorization by itself.
+ * Talks to the BistroBuddies backend for privileged operations (product
+ * create/update/delete and order status transitions). The backend verifies
+ * the Firebase ID token and confirms the signer's administrator role
+ * server-side on every request; the frontend never decides authorization by
+ * itself and never writes order or payment status directly.
  *
  * Product/order reads keep using the Firestore client SDK (secured by
  * Firestore security rules).
@@ -51,6 +53,43 @@ export class AdminApiService {
     return this.request<{ id: string }>(
       'DELETE',
       `/admin/products/${encodeURIComponent(productId)}`
+    );
+  }
+
+  /**
+   * Uploads a product image through the backend's local upload endpoint
+   * (`POST /api/admin/uploads`, `multipart/form-data` with exactly one file
+   * field named `file`) and resolves with the stored absolute `imageUrl`.
+   *
+   * The backend keeps the bytes on its own disk (development-only storage)
+   * and returns just a URL, so the caller sends that URL with the product
+   * write and Firestore stores the URL string — never image data. The
+   * browser must not set `Content-Type` here: it has to include the
+   * multipart boundary, which the runtime adds for a `FormData` body.
+   */
+  async uploadProductImage(file: File): Promise<{ imageUrl: string }> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.request<{ imageUrl: string }>('POST', '/admin/uploads', form);
+  }
+
+  /**
+   * Transitions an order's status through the backend's authorized endpoint
+   * (`POST /api/admin/orders/:id/status`, admin only).
+   *
+   * This is the **only** way order status changes in this app: the backend
+   * validates the transition against its status graph and re-checks the
+   * caller's administrator role server-side. Payment status is backend-owned
+   * and is never sent from here.
+   */
+  async updateOrderStatus(
+    orderId: string,
+    orderStatus: OrderStatus
+  ): Promise<{ id: string; orderStatus: OrderStatus }> {
+    return this.request<{ id: string; orderStatus: OrderStatus }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/status`,
+      { orderStatus }
     );
   }
 

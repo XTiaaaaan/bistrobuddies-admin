@@ -25,19 +25,42 @@
               labelPlacement="stacked"
               name="name"
               placeholder="Caramel Latte"
+              maxlength="120"
               [(ngModel)]="name"
+              required
             ></ion-input>
           </ion-item>
 
           <ion-item>
-            <ion-input
+            <ion-select
               label="Category"
               labelPlacement="stacked"
               name="category"
-              placeholder="Hot / Iced / Frappe"
+              interface="popover"
+              placeholder="Choose a category"
               [(ngModel)]="category"
-            ></ion-input>
+            >
+              @for (option of categoryOptions(); track option) {
+                <ion-select-option [value]="option">{{ option }}</ion-select-option>
+              }
+              <ion-select-option [value]="customCategoryValue">
+                Other…
+              </ion-select-option>
+            </ion-select>
           </ion-item>
+
+          @if (category === customCategoryValue) {
+            <ion-item>
+              <ion-input
+                label="Custom category"
+                labelPlacement="stacked"
+                name="customCategory"
+                placeholder="e.g. Smoothies"
+                maxlength="64"
+                [(ngModel)]="customCategory"
+              ></ion-input>
+            </ion-item>
+          }
 
           <ion-item>
             <ion-input
@@ -45,7 +68,23 @@
               labelPlacement="stacked"
               name="description"
               placeholder="Short description shown to customers"
+              maxlength="2000"
               [(ngModel)]="description"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Price (₱)"
+              labelPlacement="stacked"
+              type="number"
+              name="price"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              [(ngModel)]="price"
+              required
             ></ion-input>
           </ion-item>
 
@@ -60,39 +99,6 @@
           </ion-item>
 
           <ion-item>
-            <ion-input
-              label="Small price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="smallPrice"
-              placeholder="0.00"
-              [(ngModel)]="smallPrice"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item>
-            <ion-input
-              label="Medium price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="mediumPrice"
-              placeholder="0.00"
-              [(ngModel)]="mediumPrice"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item>
-            <ion-input
-              label="Large price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="largePrice"
-              placeholder="0.00"
-              [(ngModel)]="largePrice"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item>
             <ion-toggle
               labelPlacement="start"
               label="Available for purchase"
@@ -103,7 +109,49 @@
           </ion-item>
         </ion-list>
 
-        <div class="sugar-section">
+        <section class="image-section">
+          <h2>Image file</h2>
+          <p class="section-hint">
+            Choose a JPEG, PNG, or WebP image (max 5 MB). It is previewed here
+            and uploaded to the backend; only the returned image URL is saved
+            with the product.
+          </p>
+
+          <input
+            class="image-file-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            name="imageFile"
+            [disabled]="saving() || loading()"
+            (change)="onFileSelected($event)"
+          />
+
+          @if (imagePreview()) {
+            <div class="image-preview">
+              <img [src]="imagePreview()" alt="Selected image preview" />
+            </div>
+          }
+
+          @if (uploading()) {
+            <p class="section-status" role="status">
+              <ion-spinner name="crescent"></ion-spinner>
+              <span>Uploading image…</span>
+            </p>
+          }
+
+          @if (uploadNotice()) {
+            <p
+              class="section-notice"
+              [class.section-notice--error]="uploadNoticeError()"
+              [class.section-notice--success]="!uploadNoticeError()"
+              [attr.role]="uploadNoticeError() ? 'alert' : 'status'"
+            >
+              {{ uploadNotice() }}
+            </p>
+          }
+        </section>
+
+        <section class="sugar-section">
           <h2>Sugar options</h2>
           <p class="sugar-hint">Options customers can choose from.</p>
           <div class="sugar-chips">
@@ -118,14 +166,16 @@
               </ion-button>
             }
           </div>
-        </div>
+        </section>
 
         <div class="form-actions">
           <ion-button routerLink="/products" fill="outline">
             Cancel
           </ion-button>
-          <ion-button type="submit" [disabled]="saving() || loading()">
-            @if (saving()) {
+          <ion-button type="submit" [disabled]="saving() || loading() || uploading()">
+            @if (uploading()) {
+              Uploading image…
+            } @else if (saving()) {
               Saving...
             } @else {
               {{ editing() ? 'Save Changes' : 'Add Product' }}

@@ -42,8 +42,38 @@ body {
   width: auto;
 }
 
+/*
+ * App shell layout.
+ *
+ * `ion-router-outlet` is absolutely positioned against the viewport by
+ * default, so with an app-level `ion-header` (toolbar + nav) the header used
+ * to overlay the first ~100px of every page. Making `ion-app` a column flex
+ * container and the outlet a relative flex item puts the routed page below
+ * the header while keeping the usual Ionic page structure
+ * (`.ion-page` stays absolutely positioned inside the outlet).
+ */
+ion-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+ion-app > ion-header {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 10;
+}
+
+ion-app > ion-router-outlet {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .admin-nav {
   display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 0 12px;
   background: #4f3628;
@@ -96,4 +126,47 @@ body {
   background: #fdecec;
   color: #b33a3a;
   font-size: 14px;
+}
+
+/*
+ * Responsive rules. The admin site is used on phones as well as desktops:
+ * the header wraps, page gutters shrink and toolbar titles truncate instead
+ * of covering the actions next to them.
+ */
+@media (max-width: 700px) {
+  .admin-nav a {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .admin-header-title span {
+    font-size: 15px;
+  }
+
+  .admin-page {
+    padding: 14px 10px 32px;
+  }
+
+  .admin-page-header h1 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-header-title span {
+    display: none;
+  }
+
+  .logout-label {
+    display: none;
+  }
+
+  .admin-nav {
+    padding: 0 6px;
+  }
+
+  .admin-nav a {
+    padding: 10px;
+    font-size: 13px;
+  }
 }
