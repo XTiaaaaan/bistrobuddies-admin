@@ -1,0 +1,33 @@
+<ion-app>
+  <ion-header class="admin-header" [translucent]="true">
+    <ion-toolbar>
+      <ion-title class="admin-header-title">
+        <img src="assets/BistroBuddiesLogo.png" alt="" />
+        <span>BistroBuddies Admin</span>
+      </ion-title>
+      @if (signedIn()) {
+        <ion-buttons slot="end">
+          <ion-button (click)="logout()">
+            <ion-icon slot="start" name="log-out"></ion-icon>
+            Log Out
+          </ion-button>
+        </ion-buttons>
+      }
+    </ion-toolbar>
+
+    @if (signedIn() && !onLogin()) {
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Dashboard
+        </a>
+        <a routerLink="/products" routerLinkActive="active">Products</a>
+      </nav>
+    }
+  </ion-header>
+
+  <ion-router-outlet></ion-router-outlet>
+</ion-app>

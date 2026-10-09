@@ -1,0 +1,138 @@
+<ion-content>
+  <div class="admin-page">
+    <div class="admin-page-header">
+      <h1>{{ editing() ? 'Edit Product' : 'Add Product' }}</h1>
+      <ion-button routerLink="/products" fill="outline" size="small">
+        Back to Products
+      </ion-button>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="admin-error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    @if (loading()) {
+      <div class="admin-state" role="status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading product...</p>
+      </div>
+    } @else {
+      <form class="product-form" (ngSubmit)="save()">
+        <ion-list lines="full" class="form-list">
+          <ion-item>
+            <ion-input
+              label="Name"
+              labelPlacement="stacked"
+              name="name"
+              placeholder="Caramel Latte"
+              [(ngModel)]="name"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Category"
+              labelPlacement="stacked"
+              name="category"
+              placeholder="Hot / Iced / Frappe"
+              [(ngModel)]="category"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Description"
+              labelPlacement="stacked"
+              name="description"
+              placeholder="Short description shown to customers"
+              [(ngModel)]="description"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Image URL"
+              labelPlacement="stacked"
+              name="imageUrl"
+              placeholder="https://..."
+              [(ngModel)]="imageUrl"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Small price (₱)"
+              labelPlacement="stacked"
+              type="number"
+              name="smallPrice"
+              placeholder="0.00"
+              [(ngModel)]="smallPrice"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Medium price (₱)"
+              labelPlacement="stacked"
+              type="number"
+              name="mediumPrice"
+              placeholder="0.00"
+              [(ngModel)]="mediumPrice"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input
+              label="Large price (₱)"
+              labelPlacement="stacked"
+              type="number"
+              name="largePrice"
+              placeholder="0.00"
+              [(ngModel)]="largePrice"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-toggle
+              labelPlacement="start"
+              label="Available for purchase"
+              name="available"
+              [checked]="available()"
+              (ionChange)="available.set($event.detail.checked)"
+            ></ion-toggle>
+          </ion-item>
+        </ion-list>
+
+        <div class="sugar-section">
+          <h2>Sugar options</h2>
+          <p class="sugar-hint">Options customers can choose from.</p>
+          <div class="sugar-chips">
+            @for (option of sugarChoices; track option) {
+              <ion-button
+                size="small"
+                fill="outline"
+                [color]="selectedSugar().includes(option) ? 'primary' : 'medium'"
+                (click)="toggleSugar(option)"
+              >
+                {{ option }}
+              </ion-button>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <ion-button routerLink="/products" fill="outline">
+            Cancel
+          </ion-button>
+          <ion-button type="submit" [disabled]="saving() || loading()">
+            @if (saving()) {
+              Saving...
+            } @else {
+              {{ editing() ? 'Save Changes' : 'Add Product' }}
+            }
+          </ion-button>
+        </div>
+      </form>
+    }
+  </div>
+</ion-content>

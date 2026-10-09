@@ -1,0 +1,58 @@
+<ion-content class="admin-login-content">
+  <div class="admin-login-page">
+    <div class="admin-login-card">
+      <div class="admin-login-brand">
+        <img
+          src="assets/BistroBuddiesLogo.png"
+          alt="BistroBuddies logo"
+        />
+        <h1>BistroBuddies Admin</h1>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="admin-error" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <form (ngSubmit)="signIn()">
+        <ion-list lines="none" class="admin-login-fields">
+          <ion-item>
+            <ion-input
+              label="Email"
+              labelPlacement="stacked"
+              type="email"
+              name="email"
+              autocomplete="username"
+              placeholder="admin@example.com"
+              [(ngModel)]="email"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Password"
+              labelPlacement="stacked"
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="Your password"
+              [(ngModel)]="password"
+            ></ion-input>
+          </ion-item>
+        </ion-list>
+
+        <ion-button
+          type="submit"
+          expand="block"
+          class="admin-login-submit"
+          [disabled]="loading()"
+        >
+          @if (loading()) {
+            {{ status() }}
+          } @else {
+            Sign In
+          }
+        </ion-button>
+      </form>
+
+    </div>
+  </div>
+</ion-content>

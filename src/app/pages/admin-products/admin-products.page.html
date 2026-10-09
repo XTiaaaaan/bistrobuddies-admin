@@ -1,0 +1,98 @@
+<ion-content>
+  <div class="admin-page">
+    <div class="admin-page-header">
+      <h1>Products</h1>
+      <ion-button routerLink="/products/new">
+        <ion-icon slot="start" name="add"></ion-icon>
+        Add Product
+      </ion-button>
+    </div>
+
+    @if (status() === 'loading') {
+      <div class="admin-state" role="status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading products...</p>
+      </div>
+    } @else if (status() === 'error') {
+      <div class="admin-state" role="alert">
+        <ion-icon name="alert-circle"></ion-icon>
+        <h3>Could not load products</h3>
+        <p>Please check your connection and try again.</p>
+      </div>
+    } @else if (products().length === 0) {
+      <div class="admin-state" role="status">
+        <ion-icon name="cafe"></ion-icon>
+        <h3>No products yet</h3>
+        <p>Add your first coffee product to the menu.</p>
+        <ion-button routerLink="/products/new">Add Product</ion-button>
+      </div>
+    } @else {
+      <div class="product-list">
+        @for (product of products(); track product.id) {
+          <ion-card class="product-card">
+            <div class="product-body">
+              <div class="product-media">
+                @if (product.imageUrl) {
+                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                } @else {
+                  <ion-icon name="cafe"></ion-icon>
+                }
+              </div>
+
+              <div class="product-info">
+                <div class="product-title-row">
+                  <h2>{{ product.name }}</h2>
+                  <ion-badge [color]="isAvailable(product) ? 'success' : 'danger'">
+                    {{ isAvailable(product) ? 'Available' : 'Unavailable' }}
+                  </ion-badge>
+                </div>
+
+                @if (product.category) {
+                  <ion-chip color="secondary">{{ product.category }}</ion-chip>
+                }
+
+                <p class="product-description">{{ product.description }}</p>
+
+                <div class="price-row">
+                  <span>Small: {{ formatPrice(product.smallPrice) }}</span>
+                  <span>Medium: {{ formatPrice(product.mediumPrice) }}</span>
+                  <span>Large: {{ formatPrice(product.largePrice) }}</span>
+                </div>
+              </div>
+
+              <div class="product-actions">
+                <ion-toggle
+                  labelPlacement="start"
+                  label="Available"
+                  [checked]="isAvailable(product)"
+                  [disabled]="busyId() === product.id"
+                  (ionChange)="toggleAvailability(product, $event.detail.checked)"
+                ></ion-toggle>
+
+                <ion-button
+                  size="small"
+                  fill="outline"
+                  [routerLink]="['/products', product.id]"
+                >
+                  <ion-icon slot="start" name="create"></ion-icon>
+                  Edit
+                </ion-button>
+
+                <ion-button
+                  size="small"
+                  color="danger"
+                  fill="outline"
+                  [disabled]="busyId() === product.id"
+                  (click)="confirmDelete(product)"
+                >
+                  <ion-icon slot="start" name="trash"></ion-icon>
+                  Delete
+                </ion-button>
+              </div>
+            </div>
+          </ion-card>
+        }
+      </div>
+    }
+  </div>
+</ion-content>

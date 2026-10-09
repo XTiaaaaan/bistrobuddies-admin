@@ -1,0 +1,56 @@
+<ion-content>
+  <div class="admin-page">
+    <div class="admin-page-header">
+      <h1>Dashboard</h1>
+      <ion-button routerLink="/products" fill="outline">
+        Manage Products
+      </ion-button>
+    </div>
+
+    @if (status() === 'loading') {
+      <div class="admin-state" role="status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading products...</p>
+      </div>
+    } @else if (status() === 'error') {
+      <div class="admin-state" role="alert">
+        <ion-icon name="alert-circle"></ion-icon>
+        <h3>Could not load products</h3>
+        <p>Please check your connection and try again.</p>
+      </div>
+    } @else {
+      <div class="stat-grid">
+        <ion-card class="stat-card">
+          <ion-card-header>
+            <ion-card-title>{{ total() }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>Total Products</ion-card-content>
+        </ion-card>
+
+        <ion-card class="stat-card stat-available">
+          <ion-card-header>
+            <ion-card-title>{{ available() }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>Available</ion-card-content>
+        </ion-card>
+
+        <ion-card class="stat-card stat-unavailable">
+          <ion-card-header>
+            <ion-card-title>{{ unavailable() }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>Unavailable</ion-card-content>
+        </ion-card>
+      </div>
+
+      <ion-card class="quick-card">
+        <ion-card-header>
+          <ion-card-title>Products</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Add, edit, deactivate or delete coffee products from the Products
+          page. Changes appear in the customer app immediately.
+        </ion-card-content>
+      </ion-card>
+    }
+  </div>
+</ion-content>
