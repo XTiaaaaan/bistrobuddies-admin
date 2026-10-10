@@ -15,11 +15,13 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { authErrorMessage } from '@shared/core/auth/auth-errors';
+import { formatPhp } from '@shared/core/format/format';
 import {
   CUSTOM_CATEGORY_VALUE,
   KNOWN_CATEGORIES,
+  STANDARD_SIZE_PRICES,
   buildProductInput,
-  productPrice,
+  sizePricesForEdit,
 } from '@shared/core/products/product-form';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
@@ -73,14 +75,18 @@ function uploadFailureMessage(error: unknown): string {
 })
 export class AdminProductFormPage implements OnInit {
   readonly customCategoryValue = CUSTOM_CATEGORY_VALUE;
+  /** Formats the legacy flat price shown for tier-less products. */
+  readonly formatPrice = formatPhp;
 
   name = '';
   description = '';
   category = '';
   customCategory = '';
   imageUrl = '';
-  /** Single PHP price input (single-price model). */
-  price = '';
+  /** Size prices in PHP. New products start at the standard coffee prices. */
+  smallPrice = String(STANDARD_SIZE_PRICES.small);
+  mediumPrice = String(STANDARD_SIZE_PRICES.medium);
+  largePrice = String(STANDARD_SIZE_PRICES.large);
 
   readonly sugarChoices = SUGAR_CHOICES;
   readonly selectedSugar = signal<string[]>([...SUGAR_CHOICES]);
@@ -89,10 +95,17 @@ export class AdminProductFormPage implements OnInit {
   /** Categories known to the app plus every category already in use. */
   readonly categoryOptions = signal<string[]>([...KNOWN_CATEGORIES]);
 
-  /** Local preview of the selected file. An in-memory data URL only: it is
-   * never uploaded and never written to Firestore — the saved value is the
-   * `imageUrl` returned by the backend upload endpoint. */
+  /** Preview of the image: the saved product image, or an in-memory data URL
+   * for a newly selected file. Only the data URL is local — nothing here is
+   * uploaded; the saved value is the `imageUrl` returned by the backend. */
   readonly imagePreview = signal<string | null>(null);
+  /** True once the admin picked a file, i.e. the image will be replaced. */
+  readonly imageSelected = signal(false);
+  /**
+   * Set when the loaded product has only a legacy flat price: its size fields
+   * are pre-filled with that amount, which is not three distinct prices.
+   */
+  readonly legacyFlatPrice = signal<number | null>(null);
   /** Status message about the selected image (uploaded, or why it failed). */
   readonly uploadNotice = signal('');
   /** True when `uploadNotice` describes a failure rather than a success. */
@@ -174,6 +187,7 @@ export class AdminProductFormPage implements OnInit {
 
     if (!file) {
       this.imagePreview.set(null);
+      this.imageSelected.set(false);
       this.pendingFile = null;
       this.uploading.set(false);
       this.uploadNotice.set('');
@@ -184,6 +198,7 @@ export class AdminProductFormPage implements OnInit {
     const issue = this.imageUpload.validate(file);
     if (issue) {
       this.imagePreview.set(null);
+      this.imageSelected.set(false);
       this.pendingFile = null;
       this.uploading.set(false);
       this.uploadNotice.set(issue);
@@ -202,6 +217,7 @@ export class AdminProductFormPage implements OnInit {
         return;
       }
       this.imagePreview.set(null);
+      this.imageSelected.set(false);
       this.pendingFile = null;
       this.uploading.set(false);
       this.uploadNotice.set('The selected file could not be read.');
@@ -210,6 +226,7 @@ export class AdminProductFormPage implements OnInit {
     }
 
     this.pendingFile = file;
+    this.imageSelected.set(true);
     this.uploadNotice.set('');
     this.uploadNoticeError.set(false);
     this.uploading.set(true);
@@ -245,7 +262,9 @@ export class AdminProductFormPage implements OnInit {
         category: this.category,
         customCategory: this.customCategory,
         imageUrl: this.imageUrl,
-        price: this.price,
+        smallPrice: this.smallPrice,
+        mediumPrice: this.mediumPrice,
+        largePrice: this.largePrice,
         sugarOptions: this.selectedSugar(),
         available: this.available(),
       },
@@ -346,6 +365,8 @@ export class AdminProductFormPage implements OnInit {
   private async loadProduct(id: string): Promise<void> {
     this.loading.set(true);
     this.errorMessage.set('');
+    this.legacyFlatPrice.set(null);
+    this.resetImageState();
     try {
       const product = await this.productsService.getProduct(id);
       if (!product) {
@@ -360,8 +381,15 @@ export class AdminProductFormPage implements OnInit {
         this.knownCategories.add(product.category);
         this.categoryOptions.set([...this.knownCategories].sort());
       }
+      // The saved image is kept exactly as stored: nothing is uploaded unless
+      // the admin picks a replacement file.
       this.imageUrl = product.imageUrl ?? '';
-      this.price = this.toInput(productPrice(product));
+      this.imagePreview.set(this.imageUrl || null);
+      const sizes = sizePricesForEdit(product);
+      this.smallPrice = sizes.small;
+      this.mediumPrice = sizes.medium;
+      this.largePrice = sizes.large;
+      this.legacyFlatPrice.set(sizes.legacyFlatPrice);
       this.available.set(product.available !== false);
       if (product.sugarOptions && product.sugarOptions.length > 0) {
         this.selectedSugar.set([...product.sugarOptions]);
@@ -373,7 +401,19 @@ export class AdminProductFormPage implements OnInit {
     }
   }
 
-  private toInput(price: number | null): string {
-    return price !== null && Number.isFinite(price) ? String(price) : '';
+  /**
+   * Drops whatever was picked for the previously loaded product so an edit
+   * never keeps (or re-uploads) a file that does not belong to this form.
+   */
+  private resetImageState(): void {
+    this.uploadGeneration++; // an upload still in flight becomes stale
+    this.uploadInFlight = null;
+    this.pendingFile = null;
+    this.imageUrl = '';
+    this.imagePreview.set(null);
+    this.imageSelected.set(false);
+    this.uploading.set(false);
+    this.uploadNotice.set('');
+    this.uploadNoticeError.set(false);
   }
 }

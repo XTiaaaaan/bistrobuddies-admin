@@ -10,13 +10,14 @@ export interface Product {
   imageUrl: string;
   cloudinaryPublicId: string;
   /**
-   * Canonical PHP list price (single-price model). Optional here because
-   * legacy documents written before the standardized schema only carry the
-   * size tiers — use `productPrice()` to read either shape.
+   * Legacy PHP list price, re-derived server-side from the size tiers
+   * (medium → small → large). Optional here because documents written before
+   * the standardized schema may only carry one of the two shapes — use
+   * `productPrice()` to read either shape.
    */
   price?: number;
   currency?: string;
-  /** Size tiers kept for compatibility with existing data / the customer app. */
+  /** Canonical PHP size prices — what each size actually costs. */
   smallPrice?: number;
   mediumPrice?: number;
   largePrice?: number;
@@ -29,9 +30,12 @@ export interface Product {
 /**
  * Payload accepted by `POST`/`PATCH /api/admin/products`.
  *
- * Single-price model: the form collects one PHP price and the backend
- * backfills `smallPrice`/`mediumPrice`/`largePrice` from it, so existing
- * documents and historic orders (which snapshot their own prices) stay valid.
+ * The three size prices are canonical: they are stored exactly as sent, so
+ * distinct amounts (e.g. 100/120/150) stay distinct. The legacy `price` is
+ * sent alongside them for older readers and is always the medium tier, which
+ * is the value the backend re-derives from the size tiers — it can never
+ * flatten them.
+ * (`../bistrobuddies-backend/docs/API_CONTRACT.md` §Write payloads)
  */
 export interface ProductInput {
   name: string;
@@ -39,7 +43,11 @@ export interface ProductInput {
   category: string;
   imageUrl: string;
   cloudinaryPublicId?: string;
+  /** Legacy flat price, kept in sync with `mediumPrice`. */
   price: number;
+  smallPrice: number;
+  mediumPrice: number;
+  largePrice: number;
   sugarOptions: string[];
   available: boolean;
 }
