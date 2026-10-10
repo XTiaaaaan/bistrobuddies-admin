@@ -133,6 +133,65 @@ describe('AdminApiService', () => {
     await expect(promise).resolves.toEqual({ id: 'product-1' });
   });
 
+  it('creates a product carrying the three distinct size prices', async () => {
+    const input = {
+      name: 'House Latte',
+      description: 'Creamy latte',
+      category: 'Hot',
+      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
+      cloudinaryPublicId: '',
+      smallPrice: 100,
+      mediumPrice: 120,
+      largePrice: 150,
+      price: 120,
+      sugarOptions: ['Regular'],
+      available: true,
+    };
+    const promise = api.createProduct(input);
+    await tick();
+
+    const request = httpMock.expectOne(`${environment.apiBaseUrl}/admin/products`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toMatchObject({
+      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
+      smallPrice: 100,
+      mediumPrice: 120,
+      largePrice: 150,
+      price: 120,
+    });
+    expect(request.request.body.smallPrice).not.toBe(request.request.body.largePrice);
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer test-id-token'
+    );
+
+    request.flush({ id: 'new-product' });
+    await expect(promise).resolves.toEqual({ id: 'new-product' });
+  });
+
+  it('patches a product with three distinct size prices', async () => {
+    const promise = api.updateProduct('product-1', {
+      smallPrice: 100,
+      mediumPrice: 120,
+      largePrice: 150,
+      price: 120,
+    });
+    await tick();
+
+    const request = httpMock.expectOne(
+      `${environment.apiBaseUrl}/admin/products/product-1`
+    );
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      smallPrice: 100,
+      mediumPrice: 120,
+      largePrice: 150,
+      price: 120,
+    });
+
+    request.flush({ id: 'product-1' });
+    await expect(promise).resolves.toEqual({ id: 'product-1' });
+  });
+
   it('uploads product images as multipart form data to the upload endpoint', async () => {
     const file = new File(['image-bytes'], 'latte.png', { type: 'image/png' });
     const promise = api.uploadProductImage(file);

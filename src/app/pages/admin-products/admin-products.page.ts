@@ -79,14 +79,14 @@ export class AdminProductsPage implements OnInit {
   }
 
   /**
-   * Label for products that still carry differing size tiers, so existing
-   * data stays visible until the next save normalizes it to one price.
+   * Label listing a product's per-size prices, shown next to the canonical
+   * price whenever the sizes are not a single flat amount.
    */
   tiersLabel(product: Product): string | null {
     if (!hasLegacyTierPrices(product)) {
       return null;
     }
-    return `Legacy size tiers — Small ${formatPhp(product.smallPrice)} · Medium ${formatPhp(
+    return `Size prices — Small ${formatPhp(product.smallPrice)} · Medium ${formatPhp(
       product.mediumPrice
     )} · Large ${formatPhp(product.largePrice)}`;
   }
