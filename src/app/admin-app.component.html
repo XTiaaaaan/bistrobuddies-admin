@@ -9,7 +9,7 @@
         <ion-buttons slot="end">
           <ion-button (click)="logout()">
             <ion-icon slot="start" name="log-out"></ion-icon>
-            Log Out
+            <span class="logout-label">Log Out</span>
           </ion-button>
         </ion-buttons>
       }
@@ -25,6 +25,7 @@
           Dashboard
         </a>
         <a routerLink="/products" routerLinkActive="active">Products</a>
+        <a routerLink="/orders" routerLinkActive="active">Orders</a>
       </nav>
     }
   </ion-header>

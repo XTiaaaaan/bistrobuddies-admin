@@ -1,0 +1,274 @@
+<ion-content>
+  <div class="admin-page">
+    <div class="admin-page-header">
+      <div class="header-text">
+        <h1>Orders</h1>
+        <p class="header-sub">
+          {{ visibleOrders().length }} of {{ orders().length }} orders
+        </p>
+      </div>
+      <ion-button
+        fill="outline"
+        size="small"
+        [disabled]="status() === 'loading'"
+        (click)="reload()"
+      >
+        <ion-icon slot="start" name="refresh"></ion-icon>
+        Refresh
+      </ion-button>
+    </div>
+
+    <section class="filters" aria-label="Order search and filters">
+      <ion-searchbar
+        class="filter-search"
+        placeholder="Search order ID, customer, phone, address or item"
+        aria-label="Search orders"
+        debounce="300"
+        [value]="search()"
+        (ionInput)="onSearch($event.detail.value ?? '')"
+      ></ion-searchbar>
+
+      <ion-select
+        class="filter-select"
+        label="Status"
+        labelPlacement="stacked"
+        interface="popover"
+        fill="outline"
+        [value]="statusFilter()"
+        (ionChange)="statusFilter.set($event.detail.value)"
+      >
+        <ion-select-option value="ALL">All statuses</ion-select-option>
+        @for (option of statuses; track option) {
+          <ion-select-option [value]="option">
+            {{ statusLabel(option) }}
+          </ion-select-option>
+        }
+      </ion-select>
+
+      <ion-select
+        class="filter-select"
+        label="Payment status"
+        labelPlacement="stacked"
+        interface="popover"
+        fill="outline"
+        [value]="paymentStatusFilter()"
+        (ionChange)="paymentStatusFilter.set($event.detail.value)"
+      >
+        <ion-select-option value="ALL">All payment statuses</ion-select-option>
+        @for (option of paymentStatusOptions(); track option) {
+          <ion-select-option [value]="option">{{ option }}</ion-select-option>
+        }
+      </ion-select>
+
+      <ion-select
+        class="filter-select"
+        label="Payment method"
+        labelPlacement="stacked"
+        interface="popover"
+        fill="outline"
+        [value]="paymentMethodFilter()"
+        (ionChange)="paymentMethodFilter.set($event.detail.value)"
+      >
+        <ion-select-option value="ALL">Any method</ion-select-option>
+        <ion-select-option value="COD">COD</ion-select-option>
+        <ion-select-option value="ONLINE">ONLINE</ion-select-option>
+      </ion-select>
+
+      <ion-select
+        class="filter-select"
+        label="Date"
+        labelPlacement="stacked"
+        interface="popover"
+        fill="outline"
+        [value]="dateRangeFilter()"
+        (ionChange)="dateRangeFilter.set($event.detail.value)"
+      >
+        @for (range of dateRanges; track range.value) {
+          <ion-select-option [value]="range.value">
+            {{ range.label }}
+          </ion-select-option>
+        }
+      </ion-select>
+
+      @if (filtersActive()) {
+        <ion-button
+          class="filter-clear"
+          fill="clear"
+          size="small"
+          (click)="clearFilters()"
+        >
+          Clear filters
+        </ion-button>
+      }
+    </section>
+
+    @if (status() === 'loading') {
+      <div class="admin-state" role="status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading orders...</p>
+      </div>
+    } @else if (status() === 'error') {
+      <div class="admin-state" role="alert">
+        <ion-icon name="alert-circle"></ion-icon>
+        <h3>Could not load orders</h3>
+        <p>{{ errorMessage() }}</p>
+        <ion-button (click)="reload()">Try again</ion-button>
+      </div>
+    } @else if (orders().length === 0) {
+      <div class="admin-state" role="status">
+        <ion-icon name="receipt"></ion-icon>
+        <h3>No orders yet</h3>
+        <p>Orders placed in the customer app will show up here.</p>
+      </div>
+    } @else if (visibleOrders().length === 0) {
+      <div class="admin-state" role="status">
+        <ion-icon name="receipt"></ion-icon>
+        <h3>No matching orders</h3>
+        <p>Nothing matches the current search and filters.</p>
+        <ion-button fill="outline" (click)="clearFilters()">
+          Clear filters
+        </ion-button>
+      </div>
+    } @else {
+      <div class="order-list">
+        @for (order of visibleOrders(); track order.id) {
+          <ion-card class="order-card">
+            <div class="order-head">
+              <div class="order-id">
+                <span class="order-id-label">Order</span>
+                <strong>{{ order.id }}</strong>
+              </div>
+              <div class="order-badges">
+                <ion-badge [color]="statusColor(order.orderStatus)">
+                  {{ statusLabel(order.orderStatus) }}
+                </ion-badge>
+                <ion-badge [color]="paymentStatusColor(order.paymentStatus)">
+                  Payment: {{ order.paymentStatus }}
+                </ion-badge>
+                <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
+                  {{ order.paymentMethod }}
+                </ion-badge>
+              </div>
+              <div class="order-date">{{ formatDate(order.createdAt) }}</div>
+            </div>
+
+            <div class="order-grid">
+              <section class="order-block">
+                <h3>Customer</h3>
+                <p>
+                  <strong>{{ customerName(order) }}</strong>
+                </p>
+                @if (customerPhone(order)) {
+                  <p>{{ customerPhone(order) }}</p>
+                }
+                @if (customerEmail(order)) {
+                  <p>{{ customerEmail(order) }}</p>
+                }
+              </section>
+
+              <section class="order-block">
+                <h3>Delivery address</h3>
+                @if (addressLines(order).length > 0) {
+                  @for (line of addressLines(order); track $index) {
+                    <p>{{ line }}</p>
+                  }
+                } @else {
+                  <p class="muted">No delivery address recorded.</p>
+                }
+              </section>
+            </div>
+
+            @if (order.customerComment) {
+              <section class="order-block">
+                <h3>Customer comment</h3>
+                <p>{{ order.customerComment }}</p>
+              </section>
+            }
+
+            <section class="order-block">
+              <h3>Items</h3>
+              <div class="table-scroll">
+                <table class="order-items">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Size</th>
+                      <th>Sugar</th>
+                      <th class="num">Qty</th>
+                      <th class="num">Unit price</th>
+                      <th class="num">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of itemsOf(order); track $index) {
+                      <tr>
+                        <td>{{ item.productName }}</td>
+                        <td>{{ item.size }}</td>
+                        <td>{{ item.sugar }}</td>
+                        <td class="num">{{ item.quantity }}</td>
+                        <td class="num">{{ formatMoney(item.unitPrice) }}</td>
+                        <td class="num">{{ formatMoney(item.subtotal) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="totals">
+                <span>Subtotal {{ formatMoney(order.subtotal) }}</span>
+                <span>Delivery fee {{ formatMoney(order.deliveryFee) }}</span>
+                <strong>Total {{ formatMoney(order.total) }}</strong>
+              </div>
+            </section>
+
+            <div class="order-grid">
+              <section class="order-block">
+                <h3>Order status</h3>
+                <p class="status-line">
+                  Current:
+                  <ion-badge [color]="statusColor(order.orderStatus)">
+                    {{ statusLabel(order.orderStatus) }}
+                  </ion-badge>
+                </p>
+                @if (allowedNext(order).length > 0) {
+                  <div class="status-actions">
+                    @for (next of allowedNext(order); track next) {
+                      <ion-button
+                        size="small"
+                        [disabled]="busyId() === order.id"
+                        (click)="requestStatusChange(order, next)"
+                      >
+                        Move to {{ statusLabel(next) }}
+                      </ion-button>
+                    }
+                  </div>
+                } @else {
+                  <p class="muted">
+                    {{ statusLabel(order.orderStatus) }} is a final status — no
+                    further changes are possible.
+                  </p>
+                }
+              </section>
+
+              <section class="order-block">
+                <h3>Payment</h3>
+                <p>
+                  Method: <strong>{{ order.paymentMethod }}</strong>
+                </p>
+                <p class="status-line">
+                  Status:
+                  <ion-badge [color]="paymentStatusColor(order.paymentStatus)">
+                    {{ order.paymentStatus }}
+                  </ion-badge>
+                </p>
+                <p class="muted">
+                  Payment status is set by the backend only and cannot be
+                  changed from this screen.
+                </p>
+              </section>
+            </div>
+          </ion-card>
+        }
+      </div>
+    }
+  </div>
+</ion-content>

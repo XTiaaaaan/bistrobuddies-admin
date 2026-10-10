@@ -15,6 +15,11 @@ import {
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { add, alertCircle, cafe, create, trash } from 'ionicons/icons';
+import { formatPhp } from '@shared/core/format/format';
+import {
+  hasLegacyTierPrices,
+  productPrice,
+} from '@shared/core/products/product-form';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
 import { AdminApiService } from '../../core/api/admin-api.service';
@@ -68,14 +73,22 @@ export class AdminProductsPage implements OnInit {
     return product.available !== false;
   }
 
-  formatPrice(price: number): string {
-    if (typeof price !== 'number' || !Number.isFinite(price)) {
-      return '—';
+  /** Canonical PHP price (single-price model, with legacy tier fallback). */
+  priceOf(product: Product): string {
+    return formatPhp(productPrice(product));
+  }
+
+  /**
+   * Label for products that still carry differing size tiers, so existing
+   * data stays visible until the next save normalizes it to one price.
+   */
+  tiersLabel(product: Product): string | null {
+    if (!hasLegacyTierPrices(product)) {
+      return null;
     }
-    return `₱${price.toLocaleString('en-PH', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return `Legacy size tiers — Small ${formatPhp(product.smallPrice)} · Medium ${formatPhp(
+      product.mediumPrice
+    )} · Large ${formatPhp(product.largePrice)}`;
   }
 
   async toggleAvailability(product: Product, checked: boolean): Promise<void> {

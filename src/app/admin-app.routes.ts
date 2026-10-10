@@ -47,6 +47,14 @@ export const adminRoutes: Routes = [
       ),
   },
   {
+    path: 'orders',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('./pages/admin-orders/admin-orders.page').then(
+        (m) => m.AdminOrdersPage
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

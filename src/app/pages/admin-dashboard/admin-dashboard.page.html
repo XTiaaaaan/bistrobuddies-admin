@@ -5,6 +5,9 @@
       <ion-button routerLink="/products" fill="outline">
         Manage Products
       </ion-button>
+      <ion-button routerLink="/orders" fill="outline">
+        Manage Orders
+      </ion-button>
     </div>
 
     @if (status() === 'loading') {
@@ -44,11 +47,13 @@
 
       <ion-card class="quick-card">
         <ion-card-header>
-          <ion-card-title>Products</ion-card-title>
+          <ion-card-title>Quick actions</ion-card-title>
         </ion-card-header>
         <ion-card-content>
           Add, edit, deactivate or delete coffee products from the Products
-          page. Changes appear in the customer app immediately.
+          page, and track incoming orders on the Orders page. Product changes
+          appear in the customer app immediately; order statuses are updated
+          through the BistroBuddies backend.
         </ion-card-content>
       </ion-card>
     }
