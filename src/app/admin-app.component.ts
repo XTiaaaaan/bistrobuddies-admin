@@ -12,7 +12,13 @@ import {
   IonToolbar,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { logOutOutline, logOutSharp } from 'ionicons/icons';
+import {
+  cafe,
+  gridOutline,
+  logOutOutline,
+  logOutSharp,
+  receipt,
+} from 'ionicons/icons';
 
 import { AdminSessionService } from './core/auth/admin-session.service';
 

@@ -3,7 +3,7 @@
     <div class="admin-page-header">
       <div class="header-text">
         <h1>Orders</h1>
-        <p class="header-sub">
+        <p class="admin-page-sub">
           {{ visibleOrders().length }} of {{ orders().length }} orders
         </p>
       </div>
@@ -18,7 +18,7 @@
       </ion-button>
     </div>
 
-    <section class="filters" aria-label="Order search and filters">
+    <section class="filter-bar" aria-label="Order search and filters">
       <ion-searchbar
         class="filter-search"
         placeholder="Search order ID, customer, phone, address or item"
@@ -130,13 +130,13 @@
         </ion-button>
       </div>
     } @else {
-      <div class="order-list">
+      <div class="order-list bb-stagger">
         @for (order of visibleOrders(); track order.id) {
           <ion-card class="order-card">
             <div class="order-head">
               <div class="order-id">
                 <span class="order-id-label">Order</span>
-                <strong>{{ order.id }}</strong>
+                <strong [title]="order.id">{{ formatId(order.id) }}</strong>
               </div>
               <div class="order-badges">
                 <ion-badge [color]="statusColor(order.orderStatus)">

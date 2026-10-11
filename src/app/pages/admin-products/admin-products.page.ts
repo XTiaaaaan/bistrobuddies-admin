@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
@@ -9,6 +9,9 @@ import {
   IonChip,
   IonContent,
   IonIcon,
+  IonSearchbar,
+  IonSelect,
+  IonSelectOption,
   IonSpinner,
   IonToggle,
   ToastController,
@@ -37,6 +40,9 @@ import { AdminApiService } from '../../core/api/admin-api.service';
     IonChip,
     IonContent,
     IonIcon,
+    IonSearchbar,
+    IonSelect,
+    IonSelectOption,
     IonSpinner,
     IonToggle,
   ],
@@ -45,6 +51,43 @@ export class AdminProductsPage implements OnInit {
   readonly products = signal<Product[]>([]);
   readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   readonly busyId = signal<string | null>(null);
+
+  readonly search = signal('');
+  readonly categoryFilter = signal('ALL');
+
+  /** Every category present in the catalogue, sorted for the filter select. */
+  readonly categoryOptions = computed(() => {
+    const names = new Set<string>();
+    for (const product of this.products()) {
+      if (product.category) {
+        names.add(product.category);
+      }
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  });
+
+  /** Products matching the current search text and category filter. */
+  readonly filteredProducts = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    const category = this.categoryFilter();
+    return this.products().filter((product) => {
+      if (category !== 'ALL' && (product.category ?? '') !== category) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+      return (
+        product.name.toLowerCase().includes(query) ||
+        (product.description ?? '').toLowerCase().includes(query) ||
+        (product.category ?? '').toLowerCase().includes(query)
+      );
+    });
+  });
+
+  readonly filtersActive = computed(
+    () => this.search().trim() !== '' || this.categoryFilter() !== 'ALL'
+  );
 
   private readonly productsService = inject(ProductsService);
   private readonly adminApi = inject(AdminApiService);
@@ -71,6 +114,15 @@ export class AdminProductsPage implements OnInit {
 
   isAvailable(product: Product): boolean {
     return product.available !== false;
+  }
+
+  onSearch(value: string): void {
+    this.search.set(value.trim());
+  }
+
+  clearFilters(): void {
+    this.search.set('');
+    this.categoryFilter.set('ALL');
   }
 
   /** Canonical PHP price (single-price model, with legacy tier fallback). */

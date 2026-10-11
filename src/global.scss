@@ -1,5 +1,9 @@
 /*
  * BistroBuddies Admin Web — global styles
+ *
+ * One shared espresso/caramel/cream theme, mirroring the customer app
+ * (../bistrobuddies-mobile). All colors, radii, shadows and motion values
+ * come from the `--bb-*` tokens declared in src/theme/variables.scss.
  */
 
 /* Core CSS required for Ionic components to work properly */
@@ -19,9 +23,7 @@
 @import '@ionic/angular/css/flex-utils.css';
 
 :root {
-  --admin-bg: #f5ede4;
-  --admin-surface: #ffffff;
-  --admin-border: #e3d5c3;
+  color-scheme: light;
 }
 
 body {
@@ -29,17 +31,33 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   background: var(--admin-bg);
+  color: var(--bb-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.admin-header-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/*
+ * Typography — serif headings echo the BistroBuddies wordmark, body text
+ * stays a clean system stack for readability in tables and forms.
+ */
+h1,
+h2,
+h3,
+.admin-page-header h1,
+.ion-page h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--bb-espresso);
 }
 
-.admin-header-title img {
-  height: 32px;
-  width: auto;
+ion-title {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Keyboard users get the same clarity as touch users. */
+:focus-visible {
+  outline: 2px solid var(--bb-caramel);
+  outline-offset: 2px;
 }
 
 /*
@@ -70,38 +88,146 @@ ion-app > ion-router-outlet {
   min-height: 0;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * Header — espresso toolbar, circular logo badge and serif wordmark,
+ * matching the brand heroes of the customer app.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.admin-header ion-toolbar {
+  --background: var(--bb-espresso);
+  --color: #ffffff;
+}
+
+/*
+ * `ion-title` wraps its light-DOM content in a `.toolbar-title` block inside
+ * its shadow root, so the brand elements cannot be flex children of the host
+ * itself. The `.admin-brand-lockup` span is the real row: logo at the left,
+ * wordmark beside it.
+ */
+.admin-header-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-brand-badge {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.admin-brand-wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.admin-brand-wordmark .brand-bistro,
+.admin-brand-wordmark .brand-buddies {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+
+.admin-brand-wordmark .brand-bistro {
+  color: #ffffff;
+}
+
+.admin-brand-wordmark .brand-buddies {
+  color: var(--bb-caramel-light);
+}
+
+.admin-brand-tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(212, 169, 106, 0.22);
+  color: var(--bb-caramel-light);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.admin-header ion-buttons ion-button {
+  --color: #f0e4d6;
+  --border-radius: 10px;
+  font-weight: 600;
+  transition:
+    background-color var(--bb-motion-base) var(--bb-ease),
+    color var(--bb-motion-base) var(--bb-ease);
+}
+
+.admin-header ion-buttons ion-button:hover,
+.admin-header ion-buttons ion-button:focus-visible {
+  --color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Secondary navigation ── */
+
 .admin-nav {
   display: flex;
   flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 4px;
   padding: 0 12px;
-  background: #4f3628;
+  background: var(--bb-espresso);
+  border-top: 1px solid rgba(232, 217, 197, 0.18);
 }
 
 .admin-nav a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 12px 18px;
-  color: #f0e4d6;
+  color: rgba(245, 237, 228, 0.78);
   text-decoration: none;
   font-size: 15px;
   font-weight: 600;
   border-bottom: 3px solid transparent;
+  transition:
+    color var(--bb-motion-base) var(--bb-ease),
+    background-color var(--bb-motion-base) var(--bb-ease),
+    border-color var(--bb-motion-base) var(--bb-ease);
+}
+
+.admin-nav a ion-icon {
+  font-size: 18px;
 }
 
 .admin-nav a:hover {
   background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .admin-nav a.active {
   color: #ffffff;
-  border-bottom-color: #d4a96a;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom-color: var(--bb-caramel-light);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * Page scaffold and shared surfaces
+ * ───────────────────────────────────────────────────────────────────────── */
+
 .admin-page {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 24px 20px 48px;
+  box-sizing: border-box;
 }
 
 .admin-page-header {
@@ -110,22 +236,409 @@ ion-app > ion-router-outlet {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .admin-page-header h1 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.admin-error {
-  margin: 0 0 14px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #fdecec;
-  color: #b33a3a;
+.admin-page-sub {
+  margin: 4px 0 0;
   font-size: 14px;
+  color: var(--bb-text-muted);
+}
+
+/* Cards share one surface: white, soft border, warm shadow, generous radius. */
+.admin-card,
+ion-card {
+  margin: 0;
+  --background: var(--bb-surface);
+  --border-radius: var(--bb-radius-card);
+  --box-shadow: var(--bb-shadow-card);
+  border: 1px solid var(--bb-border);
+  transition:
+    box-shadow var(--bb-motion-base) var(--bb-ease),
+    border-color var(--bb-motion-base) var(--bb-ease);
+}
+
+/* Panels are plain divs used for filters, form sections and notices. */
+.admin-panel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-card);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+/* ── Loading, empty and error states ── */
+
+.admin-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 52px 20px;
+  text-align: center;
+  color: var(--bb-text-muted);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-card);
+}
+
+.admin-state ion-icon {
+  font-size: 44px;
+  color: var(--bb-caramel);
+}
+
+.admin-state h3 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.admin-state p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 420px;
+}
+
+.admin-state ion-button {
+  margin-top: 10px;
+}
+
+.admin-state ion-spinner {
+  width: 34px;
+  height: 34px;
+  color: var(--bb-caramel);
+}
+
+/* ── Inline banners ── */
+
+.admin-error,
+.admin-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--bb-radius-sm);
+  border: 1px solid transparent;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-error,
+.admin-notice--error {
+  background: rgba(179, 58, 58, 0.09);
+  border-color: rgba(179, 58, 58, 0.25);
+  color: #8c2f2f;
+}
+
+.admin-notice--success {
+  background: rgba(74, 124, 89, 0.11);
+  border-color: rgba(74, 124, 89, 0.28);
+  color: #2f5c3e;
+}
+
+.admin-notice--info {
+  background: rgba(212, 169, 106, 0.16);
+  border-color: rgba(168, 124, 79, 0.3);
+  color: #7a5a2e;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Controls — buttons, chips, badges, toggles
+ * ───────────────────────────────────────────────────────────────────────── */
+
+ion-button {
+  --border-radius: 12px;
+  --box-shadow: none;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  transition:
+    transform var(--bb-motion-fast) var(--bb-ease),
+    background-color var(--bb-motion-base) var(--bb-ease),
+    border-color var(--bb-motion-base) var(--bb-ease),
+    color var(--bb-motion-base) var(--bb-ease),
+    opacity var(--bb-motion-base) var(--bb-ease);
+}
+
+ion-button:active:not([disabled]) {
+  transform: scale(0.97);
+}
+
+ion-button[fill='outline'] {
+  --border-color: var(--bb-border-strong);
+  --color: var(--bb-espresso);
+}
+
+ion-chip {
+  --background: rgba(168, 124, 79, 0.14);
+  --color: #6f4a25;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+ion-toggle {
+  --track-background-checked: var(--bb-caramel);
+  --handle-background-checked: #ffffff;
+}
+
+/* Status badges read as soft, warm pills instead of saturated blocks. */
+ion-badge {
+  --padding-start: 10px;
+  --padding-end: 10px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+ion-badge.ion-color-primary {
+  --background: rgba(59, 36, 24, 0.1);
+  --color: var(--bb-espresso);
+}
+
+ion-badge.ion-color-secondary {
+  --background: rgba(168, 124, 79, 0.18);
+  --color: #6f4a25;
+}
+
+ion-badge.ion-color-tertiary {
+  --background: rgba(212, 169, 106, 0.3);
+  --color: #6f4a25;
+}
+
+ion-badge.ion-color-warning {
+  --background: rgba(212, 169, 106, 0.25);
+  --color: #7a5a2e;
+}
+
+ion-badge.ion-color-success {
+  --background: rgba(74, 124, 89, 0.15);
+  --color: #2f5c3e;
+}
+
+ion-badge.ion-color-danger {
+  --background: rgba(179, 58, 58, 0.12);
+  --color: #8c2f2f;
+}
+
+ion-badge.ion-color-medium {
+  --background: #efe6da;
+  --color: #6f5a45;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Forms and filters
+ * ───────────────────────────────────────────────────────────────────────── */
+
+ion-item {
+  --border-radius: var(--bb-radius-sm);
+}
+
+ion-input,
+ion-select {
+  --placeholder-color: var(--bb-text-soft);
+  font-size: 15px;
+}
+
+ion-searchbar {
+  --background: var(--bb-surface-sunken);
+  --border-radius: var(--bb-radius-sm);
+  --box-shadow: none;
+  --icon-color: var(--bb-text-soft);
+  --placeholder-color: var(--bb-text-soft);
+  --color: var(--bb-text);
+}
+
+/* Shared search + filter toolbar (orders, products). */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 20px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-card);
+}
+
+.filter-search {
+  flex: 1 1 260px;
+  min-width: 200px;
+  --padding-start: 12px;
+}
+
+.filter-select {
+  flex: 0 1 190px;
+  min-width: 150px;
+  --background: var(--bb-surface-sunken);
+  --border-radius: var(--bb-radius-sm);
+  --placeholder-color: var(--bb-text-soft);
+}
+
+.filter-clear {
+  align-self: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Tables
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bb-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--bb-text-muted);
+  background: var(--bb-surface-sunken);
+}
+
+.admin-table td {
+  color: var(--bb-text);
+}
+
+.admin-table tbody tr {
+  transition: background-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.admin-table tbody tr:hover {
+  background: var(--bb-surface-sunken);
+}
+
+.admin-table td:first-child {
+  white-space: normal;
+}
+
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Feedback surfaces — alerts and toasts keep the brand voice
+ * ───────────────────────────────────────────────────────────────────────── */
+
+ion-toast {
+  --background: var(--bb-espresso);
+  --color: #ffffff;
+  --border-radius: 14px;
+  --box-shadow: var(--bb-shadow-raised);
+  --margin: 12px;
+  font-size: 14px;
+}
+
+ion-alert {
+  --backdrop-opacity: 0.45;
+  --background: var(--bb-surface);
+  --border-radius: var(--bb-radius-card);
+  --box-shadow: var(--bb-shadow-raised);
+  --title-color: var(--bb-espresso);
+  --message-color: var(--bb-text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Motion — small, purposeful and always optional
+ * ───────────────────────────────────────────────────────────────────────── */
+
+@keyframes bb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bb-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.bb-rise {
+  animation: bb-rise 0.34s var(--bb-ease) backwards;
+}
+
+.bb-fade {
+  animation: bb-fade 0.4s var(--bb-ease) backwards;
+}
+
+/* Gentle entrance for freshly rendered lists. */
+.bb-stagger > * {
+  animation: bb-rise 0.34s var(--bb-ease) backwards;
+}
+
+.bb-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.bb-stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.bb-stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.bb-stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.bb-stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.bb-stagger > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+
+/*
+ * Motion is a nicety, never a requirement: anything animated collapses to a
+ * single frame for users who ask their device to reduce motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /*
@@ -139,21 +652,36 @@ ion-app > ion-router-outlet {
     font-size: 14px;
   }
 
-  .admin-header-title span {
-    font-size: 15px;
+  .admin-brand-wordmark .brand-bistro,
+  .admin-brand-wordmark .brand-buddies {
+    font-size: 17px;
   }
 
   .admin-page {
-    padding: 14px 10px 32px;
+    padding: 16px 12px 36px;
   }
 
   .admin-page-header h1 {
-    font-size: 20px;
+    font-size: 21px;
+  }
+
+  .admin-panel {
+    padding: 14px;
+  }
+
+  .filter-search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filter-select {
+    flex: 1 1 45%;
+    min-width: 130px;
   }
 }
 
 @media (max-width: 420px) {
-  .admin-header-title span {
+  .admin-brand-tag {
     display: none;
   }
 
@@ -168,5 +696,9 @@ ion-app > ion-router-outlet {
   .admin-nav a {
     padding: 10px;
     font-size: 13px;
+  }
+
+  .admin-nav a ion-icon {
+    display: none;
   }
 }

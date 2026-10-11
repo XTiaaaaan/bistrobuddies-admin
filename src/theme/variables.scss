@@ -1,4 +1,8 @@
 // BistroBuddies Coffee Palette
+//
+// Same palette and design tokens as the BistroBuddies customer app
+// (../bistrobuddies-mobile/src/theme/variables.scss), so the admin site and
+// the customer app share one established brand theme.
 :root {
   --ion-color-primary: #3B2418;
   --ion-color-primary-rgb: 59, 36, 24;
@@ -24,6 +28,8 @@
   --ion-color-success: #4a7c59;
   --ion-color-warning: #d4a96a;
   --ion-color-danger: #b33a3a;
+  --ion-color-medium: #8b7355;
+  --ion-color-light: #f5ede4;
 
   --ion-background-color: #F5EDE4;
   --ion-background-color-rgb: 245, 237, 228;
@@ -35,4 +41,34 @@
 
   --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+
+  /* ── BistroBuddies design tokens (shared with the customer app) ── */
+  --bb-espresso: #3b2418;
+  --bb-caramel: #a87c4f;
+  --bb-caramel-light: #d4a96a;
+  --bb-cream: #f5ede4;
+
+  --bb-surface: #ffffff;
+  --bb-surface-sunken: #faf5ee;
+  --bb-border: #efe2d3;
+  --bb-border-strong: #e8d9c5;
+
+  --bb-text: #3b2418;
+  --bb-text-muted: #8b7355;
+  --bb-text-soft: #a08b76;
+
+  --bb-shadow-card: 0 6px 18px rgba(59, 36, 24, 0.07);
+  --bb-shadow-raised: 0 12px 28px rgba(59, 36, 24, 0.14);
+
+  --bb-radius-card: 18px;
+  --bb-radius-sm: 12px;
+
+  --bb-motion-fast: 140ms;
+  --bb-motion-base: 240ms;
+  --bb-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* ── Admin site aliases (legacy names kept for existing styles) ── */
+  --admin-bg: var(--bb-cream);
+  --admin-surface: var(--bb-surface);
+  --admin-border: var(--bb-border);
 }

@@ -1,42 +1,29 @@
-.admin-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 48px 16px;
-  text-align: center;
-  color: #6b4a35;
-}
-
-.admin-state ion-icon {
-  font-size: 42px;
-}
-
 .product-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.product-card {
-  margin: 0;
-  border: 1px solid var(--admin-border);
+.product-card:hover {
+  border-color: var(--bb-border-strong);
+  box-shadow: var(--bb-shadow-raised);
 }
 
 .product-body {
   display: flex;
-  gap: 16px;
-  padding: 16px;
+  gap: 18px;
+  padding: 18px;
   align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .product-media {
-  width: 84px;
-  height: 84px;
-  border-radius: 10px;
+  width: 92px;
+  height: 92px;
+  border-radius: var(--bb-radius-sm);
   overflow: hidden;
-  background: #faf6f1;
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,12 +33,17 @@
 .product-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  transition: transform var(--bb-motion-base) var(--bb-ease);
+}
+
+.product-card:hover .product-media img {
+  transform: scale(1.04);
 }
 
 .product-media ion-icon {
   font-size: 34px;
-  color: #a87c4f;
+  color: var(--bb-caramel);
 }
 
 .product-info {
@@ -69,13 +61,14 @@
 .product-title-row h2 {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .product-description {
   margin: 6px 0;
   font-size: 14px;
-  color: #6b4a35;
+  line-height: 1.5;
+  color: var(--bb-text-muted);
 }
 
 .price-row {
@@ -84,23 +77,24 @@
   flex-wrap: wrap;
   font-size: 14px;
   font-weight: 600;
-  color: #3b2418;
+  color: var(--bb-espresso);
 }
 
 .price-main {
   font-size: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 .price-tiers {
   font-weight: 400;
   font-size: 13px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
 }
 
 .product-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-end;
   margin-left: auto;
 }
@@ -109,15 +103,21 @@
   --label-font-size: 14px;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 720px) {
   .product-body {
-    padding: 12px;
+    padding: 14px;
     gap: 12px;
   }
 
   .product-media {
-    width: 64px;
-    height: 64px;
+    width: 68px;
+    height: 68px;
   }
 
   .product-actions {
@@ -126,6 +126,10 @@
     align-items: center;
     justify-content: flex-start;
     margin-left: 0;
+    width: 100%;
+  }
+
+  .action-buttons {
     width: 100%;
   }
 

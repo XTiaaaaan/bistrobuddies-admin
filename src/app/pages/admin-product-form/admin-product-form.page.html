@@ -1,7 +1,16 @@
 <ion-content>
   <div class="admin-page">
     <div class="admin-page-header">
-      <h1>{{ editing() ? 'Edit Product' : 'Add Product' }}</h1>
+      <div class="header-text">
+        <h1>{{ editing() ? 'Edit Product' : 'Add Product' }}</h1>
+        <p class="admin-page-sub">
+          {{
+            editing()
+              ? 'Update the menu item customers see in the app.'
+              : 'Create a new coffee item for the BistroBuddies menu.'
+          }}
+        </p>
+      </div>
       <ion-button routerLink="/products" fill="outline" size="small">
         Back to Products
       </ion-button>
@@ -18,131 +27,148 @@
       </div>
     } @else {
       <form class="product-form" (ngSubmit)="save()">
-        <ion-list lines="full" class="form-list">
-          <ion-item>
-            <ion-input
-              label="Name"
-              labelPlacement="stacked"
-              name="name"
-              placeholder="Caramel Latte"
-              maxlength="120"
-              [(ngModel)]="name"
-              required
-            ></ion-input>
-          </ion-item>
+        <section class="form-panel bb-rise">
+          <h2>Details</h2>
 
-          <ion-item>
-            <ion-select
-              label="Category"
-              labelPlacement="stacked"
-              name="category"
-              interface="popover"
-              placeholder="Choose a category"
-              [(ngModel)]="category"
-            >
-              @for (option of categoryOptions(); track option) {
-                <ion-select-option [value]="option">{{ option }}</ion-select-option>
-              }
-              <ion-select-option [value]="customCategoryValue">
-                Other…
-              </ion-select-option>
-            </ion-select>
-          </ion-item>
-
-          @if (category === customCategoryValue) {
+          <ion-list lines="none" class="form-list">
             <ion-item>
               <ion-input
-                label="Custom category"
+                label="Name"
                 labelPlacement="stacked"
-                name="customCategory"
-                placeholder="e.g. Smoothies"
-                maxlength="64"
-                [(ngModel)]="customCategory"
+                name="name"
+                placeholder="Caramel Latte"
+                maxlength="120"
+                [(ngModel)]="name"
+                required
               ></ion-input>
             </ion-item>
-          }
 
-          <ion-item>
-            <ion-input
-              label="Description"
-              labelPlacement="stacked"
-              name="description"
-              placeholder="Short description shown to customers"
-              maxlength="2000"
-              [(ngModel)]="description"
-            ></ion-input>
-          </ion-item>
+            <ion-item>
+              <ion-select
+                label="Category"
+                labelPlacement="stacked"
+                name="category"
+                interface="popover"
+                placeholder="Choose a category"
+                [(ngModel)]="category"
+              >
+                @for (option of categoryOptions(); track option) {
+                  <ion-select-option [value]="option">{{ option }}</ion-select-option>
+                }
+                <ion-select-option [value]="customCategoryValue">
+                  Other…
+                </ion-select-option>
+              </ion-select>
+            </ion-item>
 
-          <ion-item>
-            <ion-input
-              label="Small price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="smallPrice"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="100"
-              [(ngModel)]="smallPrice"
-              required
-            ></ion-input>
-          </ion-item>
+            @if (category === customCategoryValue) {
+              <ion-item>
+                <ion-input
+                  label="Custom category"
+                  labelPlacement="stacked"
+                  name="customCategory"
+                  placeholder="e.g. Smoothies"
+                  maxlength="64"
+                  [(ngModel)]="customCategory"
+                ></ion-input>
+              </ion-item>
+            }
 
-          <ion-item>
-            <ion-input
-              label="Medium price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="mediumPrice"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="120"
-              [(ngModel)]="mediumPrice"
-              required
-            ></ion-input>
-          </ion-item>
+            <ion-item>
+              <ion-input
+                label="Description"
+                labelPlacement="stacked"
+                name="description"
+                placeholder="Short description shown to customers"
+                maxlength="2000"
+                [(ngModel)]="description"
+              ></ion-input>
+            </ion-item>
+          </ion-list>
+        </section>
 
-          <ion-item>
-            <ion-input
-              label="Large price (₱)"
-              labelPlacement="stacked"
-              type="number"
-              name="largePrice"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="150"
-              [(ngModel)]="largePrice"
-              required
-            ></ion-input>
-          </ion-item>
+        <section class="form-panel bb-rise">
+          <h2>Pricing</h2>
+          <p class="section-hint">All prices are in Philippine pesos (₱).</p>
 
-          <ion-item>
-            <ion-toggle
-              labelPlacement="start"
-              label="Available for purchase"
-              name="available"
-              [checked]="available()"
-              (ionChange)="available.set($event.detail.checked)"
-            ></ion-toggle>
-          </ion-item>
-        </ion-list>
+          <ion-list lines="none" class="form-list price-list">
+            <ion-item>
+              <ion-input
+                label="Small price (₱)"
+                labelPlacement="stacked"
+                type="number"
+                name="smallPrice"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="100"
+                [(ngModel)]="smallPrice"
+                required
+              ></ion-input>
+            </ion-item>
 
-        <p class="section-hint">
-          Standard coffee prices — Small ₱100 · Medium ₱120 · Large ₱150.
-        </p>
+            <ion-item>
+              <ion-input
+                label="Medium price (₱)"
+                labelPlacement="stacked"
+                type="number"
+                name="mediumPrice"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="120"
+                [(ngModel)]="mediumPrice"
+                required
+              ></ion-input>
+            </ion-item>
 
-        @if (legacyFlatPrice() !== null) {
-          <p class="section-notice" role="status">
-            This product was saved with a single flat price
-            ({{ formatPrice(legacyFlatPrice()) }}). Its size fields are all set
-            to that amount — change them to charge a different price per size.
+            <ion-item>
+              <ion-input
+                label="Large price (₱)"
+                labelPlacement="stacked"
+                type="number"
+                name="largePrice"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="150"
+                [(ngModel)]="largePrice"
+                required
+              ></ion-input>
+            </ion-item>
+          </ion-list>
+
+          <p class="section-hint">
+            Standard coffee prices — Small ₱100 · Medium ₱120 · Large ₱150.
           </p>
-        }
 
-        <section class="image-section">
-          <h2>Image file</h2>
+          @if (legacyFlatPrice() !== null) {
+            <p class="admin-notice admin-notice--info" role="status">
+              This product was saved with a single flat price
+              ({{ formatPrice(legacyFlatPrice()) }}). Its size fields are all
+              set to that amount — change them to charge a different price per
+              size.
+            </p>
+          }
+        </section>
+
+        <section class="form-panel bb-rise">
+          <h2>Availability</h2>
+          <ion-list lines="none" class="form-list">
+            <ion-item>
+              <ion-toggle
+                labelPlacement="start"
+                label="Available for purchase"
+                name="available"
+                [checked]="available()"
+                (ionChange)="available.set($event.detail.checked)"
+              ></ion-toggle>
+            </ion-item>
+          </ion-list>
+        </section>
+
+        <section class="form-panel bb-rise">
+          <h2>Image</h2>
           <p class="section-hint">
             Choose a JPEG, PNG, or WebP image (max 5 MB). It is previewed here
             and uploaded to the backend; only the returned image URL is saved
@@ -180,9 +206,9 @@
 
           @if (uploadNotice()) {
             <p
-              class="section-notice"
-              [class.section-notice--error]="uploadNoticeError()"
-              [class.section-notice--success]="!uploadNoticeError()"
+              class="admin-notice"
+              [class.admin-notice--error]="uploadNoticeError()"
+              [class.admin-notice--success]="!uploadNoticeError()"
               [attr.role]="uploadNoticeError() ? 'alert' : 'status'"
             >
               {{ uploadNotice() }}
@@ -190,9 +216,9 @@
           }
         </section>
 
-        <section class="sugar-section">
+        <section class="form-panel bb-rise">
           <h2>Sugar options</h2>
-          <p class="sugar-hint">Options customers can choose from.</p>
+          <p class="section-hint">Options customers can choose from.</p>
           <div class="sugar-chips">
             @for (option of sugarChoices; track option) {
               <ion-button

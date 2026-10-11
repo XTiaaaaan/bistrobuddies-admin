@@ -2,8 +2,18 @@
   <ion-header class="admin-header" [translucent]="true">
     <ion-toolbar>
       <ion-title class="admin-header-title">
-        <img src="assets/BistroBuddiesLogo.png" alt="" />
-        <span>BistroBuddies Admin</span>
+        <span class="admin-brand-lockup">
+          <img
+            class="admin-brand-badge"
+            src="assets/BistroBuddiesLogo.png"
+            alt=""
+          />
+          <span class="admin-brand-wordmark">
+            <span class="brand-bistro">Bistro</span>
+            <span class="brand-buddies">Buddies</span>
+          </span>
+          <span class="admin-brand-tag">Admin</span>
+        </span>
       </ion-title>
       @if (signedIn()) {
         <ion-buttons slot="end">
@@ -22,10 +32,17 @@
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
+          <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
           Dashboard
         </a>
-        <a routerLink="/products" routerLinkActive="active">Products</a>
-        <a routerLink="/orders" routerLinkActive="active">Orders</a>
+        <a routerLink="/products" routerLinkActive="active">
+          <ion-icon name="cafe" aria-hidden="true"></ion-icon>
+          Products
+        </a>
+        <a routerLink="/orders" routerLinkActive="active">
+          <ion-icon name="receipt" aria-hidden="true"></ion-icon>
+          Orders
+        </a>
       </nav>
     }
   </ion-header>

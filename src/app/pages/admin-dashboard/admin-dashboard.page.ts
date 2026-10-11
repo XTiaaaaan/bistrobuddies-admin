@@ -12,7 +12,14 @@ import {
   IonSpinner,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { alertCircle, cafe } from 'ionicons/icons';
+import {
+  add,
+  alertCircle,
+  cafe,
+  checkmarkCircle,
+  closeCircle,
+  receipt,
+} from 'ionicons/icons';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
 
@@ -47,7 +54,7 @@ export class AdminDashboardPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    addIcons({ alertCircle, cafe });
+    addIcons({ add, alertCircle, cafe, checkmarkCircle, closeCircle, receipt });
   }
 
   ngOnInit(): void {
