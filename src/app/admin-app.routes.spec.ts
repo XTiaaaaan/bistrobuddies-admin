@@ -24,6 +24,16 @@ describe('adminRoutes', () => {
     expect(typeof ordersRoute?.loadComponent).toBe('function');
   });
 
+  it('registers the customer messages page behind the guard', () => {
+    const messagesRoute = adminRoutes.find(
+      (route) => route.path === 'messages'
+    );
+
+    expect(messagesRoute).toBeDefined();
+    expect(messagesRoute?.canMatch).toContain(adminGuard);
+    expect(typeof messagesRoute?.loadComponent).toBe('function');
+  });
+
   it('keeps the login page reachable without a guard', () => {
     const loginRoute = adminRoutes.find((route) => route.path === 'login');
 

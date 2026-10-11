@@ -4,6 +4,12 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProductInput } from '@shared/models/product.model';
 import { OrderStatus } from '@shared/models/order.model';
+import {
+  ContactMessageListResponse,
+  ContactMessageStatus,
+  ContactMessageStatusUpdate,
+  ContactMessageStatusUpdateResponse,
+} from '@shared/models/contact-message.model';
 import { AuthService } from '@shared/services/auth.service';
 
 /** Error raised for backend admin API failures, with the backend status code. */
@@ -93,10 +99,62 @@ export class AdminApiService {
     );
   }
 
+  /**
+   * Lists customer "Contact Us" messages through the backend's admin
+   * endpoint (`GET /api/admin/contact-messages`, admin only), newest first.
+   *
+   * The messages collection is private: clients have no Firestore access to
+   * it, so this HTTP endpoint is the only way the admin site reads it. The
+   * backend strips `userId` from every row — only the submission fields and
+   * the workflow status reach the browser.
+   */
+  async listContactMessages(
+    query: {
+      status?: ContactMessageStatus;
+      page?: number;
+      pageSize?: number;
+    } = {}
+  ): Promise<ContactMessageListResponse> {
+    const params: Record<string, string> = {};
+    if (query.status) {
+      params['status'] = query.status;
+    }
+    if (query.page !== undefined) {
+      params['page'] = String(query.page);
+    }
+    if (query.pageSize !== undefined) {
+      params['pageSize'] = String(query.pageSize);
+    }
+    return this.request<ContactMessageListResponse>(
+      'GET',
+      '/admin/contact-messages',
+      undefined,
+      Object.keys(params).length > 0 ? params : undefined
+    );
+  }
+
+  /**
+   * Changes a contact message's workflow status through the backend's
+   * authorized endpoint (`PATCH /api/admin/contact-messages/:id/status`,
+   * admin only). Only `READ` and `RESOLVED` are accepted; `NEW` is the
+   * server-assigned initial status and can never be re-applied.
+   */
+  async updateContactMessageStatus(
+    messageId: string,
+    status: ContactMessageStatusUpdate
+  ): Promise<ContactMessageStatusUpdateResponse> {
+    return this.request<ContactMessageStatusUpdateResponse>(
+      'PATCH',
+      `/admin/contact-messages/${encodeURIComponent(messageId)}/status`,
+      { status }
+    );
+  }
+
   private async request<T>(
-    method: 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     path: string,
-    body?: unknown
+    body?: unknown,
+    params?: Record<string, string>
   ): Promise<T> {
     const token = await this.auth.getIdToken();
     if (!token) {
@@ -107,6 +165,7 @@ export class AdminApiService {
       return await firstValueFrom(
         this.http.request<T>(method, `${this.baseUrl}${path}`, {
           body,
+          params,
           headers: { Authorization: `Bearer ${token}` },
         })
       );

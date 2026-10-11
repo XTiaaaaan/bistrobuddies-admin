@@ -1,0 +1,237 @@
+<ion-content>
+  <div class="admin-page">
+    <div class="admin-page-header">
+      <div class="header-text">
+        <h1>Customer Messages</h1>
+        <p class="admin-page-sub">
+          Messages submitted through the mobile app's Contact Us form.
+        </p>
+      </div>
+      <ion-button
+        fill="outline"
+        size="small"
+        [disabled]="refreshing() || loadStatus() === 'loading'"
+        (click)="refresh()"
+      >
+        @if (refreshing()) {
+          <ion-spinner slot="start" name="crescent"></ion-spinner>
+        } @else {
+          <ion-icon slot="start" name="refresh"></ion-icon>
+        }
+        Refresh
+      </ion-button>
+    </div>
+
+    <section class="filter-bar" aria-label="Message filters">
+      <ion-select
+        class="filter-select"
+        label="Status"
+        labelPlacement="stacked"
+        interface="popover"
+        fill="outline"
+        aria-label="Filter messages by status"
+        [value]="statusFilter()"
+        (ionChange)="onStatusFilterChange($event.detail.value)"
+      >
+        @for (option of statusOptions; track option.value) {
+          <ion-select-option [value]="option.value">
+            {{ option.label }}
+          </ion-select-option>
+        }
+      </ion-select>
+
+      @if (statusFilter() !== 'ALL') {
+        <ion-button
+          class="filter-clear"
+          fill="clear"
+          size="small"
+          (click)="onStatusFilterChange('ALL')"
+        >
+          Show all messages
+        </ion-button>
+      }
+    </section>
+
+    @if (loadStatus() === 'loading') {
+      <div class="admin-state" role="status">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading messages...</p>
+      </div>
+    } @else if (loadStatus() === 'error') {
+      <div class="admin-state" role="alert">
+        <ion-icon name="alert-circle"></ion-icon>
+        <h3>Could not load messages</h3>
+        <p>{{ errorMessage() }}</p>
+        <ion-button (click)="load()">Try again</ion-button>
+      </div>
+    } @else if (messages().length === 0) {
+      @if (statusFilter() === 'ALL') {
+        <div class="admin-state" role="status">
+          <ion-icon name="mail"></ion-icon>
+          <h3>No messages yet</h3>
+          <p>
+            Messages sent through the Contact Us form in the customer app will
+            appear here.
+          </p>
+        </div>
+      } @else {
+        <div class="admin-state" role="status">
+          <ion-icon name="mail"></ion-icon>
+          <h3>No matching messages</h3>
+          <p>No messages currently have this status.</p>
+          <ion-button fill="outline" (click)="onStatusFilterChange('ALL')">
+            Show all messages
+          </ion-button>
+        </div>
+      }
+    } @else {
+      <div class="admin-table-wrap bb-stagger">
+        <table class="admin-table message-table">
+          <caption class="visually-hidden">
+            Customer Contact Us messages, newest first
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Sender</th>
+              <th scope="col">Email</th>
+              <th scope="col">Subject</th>
+              <th scope="col">Message</th>
+              <th scope="col">Received</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (message of messages(); track message.id) {
+              <tr>
+                <td class="sender-cell">{{ message.name }}</td>
+                <td class="email-cell">{{ message.email }}</td>
+                <td class="subject-cell">{{ message.subject }}</td>
+                <td
+                  class="message-preview"
+                  [title]="message.message"
+                >
+                  {{ preview(message.message) }}
+                </td>
+                <td class="date-cell">{{ formatDate(message.createdAt) }}</td>
+                <td>
+                  <ion-badge [color]="statusColor(message.status)">
+                    {{ statusLabel(message.status) }}
+                  </ion-badge>
+                </td>
+                <td class="action-cell">
+                  <ion-button
+                    size="small"
+                    fill="outline"
+                    [attr.aria-label]="'View message from ' + message.name"
+                    (click)="openMessage(message)"
+                  >
+                    View
+                  </ion-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="pagination-bar" aria-label="Message pages">
+        <ion-button
+          fill="outline"
+          size="small"
+          [disabled]="!canGoPrevious() || refreshing()"
+          (click)="previousPage()"
+        >
+          Previous
+        </ion-button>
+        <span class="page-info" aria-live="polite">
+          Page {{ page() }} of {{ totalPages() }} · {{ total() }} messages
+        </span>
+        <ion-button
+          fill="outline"
+          size="small"
+          [disabled]="!canGoNext() || refreshing()"
+          (click)="nextPage()"
+        >
+          Next
+        </ion-button>
+      </nav>
+    }
+  </div>
+
+  <ion-modal
+    [isOpen]="selected() !== null"
+    (didDismiss)="closeDetail()"
+    aria-label="Message details"
+  >
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Message details</ion-title>
+          <ion-buttons slot="end">
+            <ion-button
+              aria-label="Close message details"
+              (click)="closeDetail()"
+            >
+              <ion-icon slot="icon-only" name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="detail-content">
+        @if (selected(); as message) {
+          <div class="detail-panel">
+            <div class="detail-head">
+              <h2>{{ message.subject }}</h2>
+              <ion-badge [color]="statusColor(message.status)">
+                {{ statusLabel(message.status) }}
+              </ion-badge>
+            </div>
+
+            <section class="detail-block">
+              <h3>From</h3>
+              <p>
+                <strong>{{ message.name }}</strong>
+              </p>
+              <p>
+                <a [href]="mailto(message.email)">{{ message.email }}</a>
+              </p>
+            </section>
+
+            <section class="detail-block">
+              <h3>Received</h3>
+              <p>{{ formatDate(message.createdAt) }}</p>
+            </section>
+
+            <section class="detail-block">
+              <h3>Message</h3>
+              <p class="detail-message">{{ message.message }}</p>
+            </section>
+
+            <section class="detail-block">
+              <h3>Update status</h3>
+              @if (selectedUpdates().length > 0) {
+                <div class="status-actions">
+                  @for (update of selectedUpdates(); track update) {
+                    <ion-button
+                      size="small"
+                      [disabled]="isBusy(message)"
+                      (click)="updateStatus(message, update)"
+                    >
+                      Mark as {{ statusLabel(update) }}
+                    </ion-button>
+                  }
+                </div>
+              } @else {
+                <p class="muted">
+                  This message is resolved — no further status changes are
+                  possible.
+                </p>
+              }
+            </section>
+          </div>
+        }
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

@@ -17,6 +17,7 @@ import {
   gridOutline,
   logOutOutline,
   logOutSharp,
+  mailOutline,
   receipt,
 } from 'ionicons/icons';
 
@@ -50,8 +51,12 @@ export class AdminAppComponent implements OnInit {
 
   constructor() {
     addIcons({
+      cafe,
+      gridOutline,
       logOutOutline,
       logOutSharp,
+      mailOutline,
+      receipt,
     });
   }
 
