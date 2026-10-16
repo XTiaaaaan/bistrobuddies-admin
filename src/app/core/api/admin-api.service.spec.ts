@@ -153,8 +153,9 @@ describe('AdminApiService', () => {
       name: 'House Latte',
       description: 'Creamy latte',
       category: 'Hot',
-      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
-      cloudinaryPublicId: '',
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      cloudinaryPublicId: 'bistrobuddies/latte-abc123',
       smallPrice: 100,
       mediumPrice: 120,
       largePrice: 150,
@@ -168,7 +169,9 @@ describe('AdminApiService', () => {
     const request = httpMock.expectOne(`${environment.apiBaseUrl}/admin/products`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toMatchObject({
-      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      cloudinaryPublicId: 'bistrobuddies/latte-abc123',
       smallPrice: 100,
       mediumPrice: 120,
       largePrice: 150,
@@ -222,9 +225,18 @@ describe('AdminApiService', () => {
       'Bearer test-id-token'
     );
 
-    request.flush({ imageUrl: 'http://localhost:3001/uploads/1-latte.png' });
-    await expect(promise).resolves.toEqual({
-      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
+    request.flush({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: 'bistrobuddies/latte-abc123',
+      fileName: 'bistrobuddies/latte-abc123',
+      mimeType: 'image/png',
+      size: file.size,
+    });
+    await expect(promise).resolves.toMatchObject({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: 'bistrobuddies/latte-abc123',
     });
   });
 

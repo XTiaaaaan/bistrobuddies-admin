@@ -16,7 +16,9 @@ import { AdminProductFormPage } from './admin-product-form.page';
 const uploadUrl = `${environment.apiBaseUrl}/admin/uploads`;
 const createUrl = `${environment.apiBaseUrl}/admin/products`;
 const patchUrl = `${environment.apiBaseUrl}/admin/products/p9`;
-const imageUrl = 'http://localhost:3001/uploads/1760000000000-latte.png';
+const imageUrl =
+  'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123';
+const publicId = 'bistrobuddies/latte-abc123';
 
 async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
   const startedAt = Date.now();
@@ -150,7 +152,7 @@ describe('AdminProductFormPage image upload', () => {
     expect(request.request.headers.get('Authorization')).toBe(
       'Bearer test-id-token'
     );
-    request.flush({ imageUrl });
+    request.flush({ imageUrl, publicId });
 
     await selection;
     expect(page.imageUrl).toBe(imageUrl);
@@ -174,7 +176,7 @@ describe('AdminProductFormPage image upload', () => {
     expect(httpMock.match(uploadUrl)).toHaveLength(0);
     expect(page.saving()).toBe(true);
 
-    uploadRequest.flush({ imageUrl });
+    uploadRequest.flush({ imageUrl, publicId });
     await selection;
 
     const [createRequest] = await waitForRequest(httpMock, createUrl);
@@ -188,6 +190,8 @@ describe('AdminProductFormPage image upload', () => {
       largePrice: 150,
       price: 120,
       imageUrl,
+      // The Cloudinary public_id from the upload is stored with the product.
+      cloudinaryPublicId: publicId,
     });
     createRequest.flush({ id: 'new-product' });
 
@@ -352,7 +356,7 @@ describe('AdminProductFormPage image upload', () => {
     const [uploadRequest] = await waitForRequest(httpMock, uploadUrl);
     expect(uploadRequest.request.method).toBe('POST');
     expect((uploadRequest.request.body as FormData).get('file')).toBeInstanceOf(File);
-    uploadRequest.flush({ imageUrl });
+    uploadRequest.flush({ imageUrl, publicId });
     await selection;
     expect(page.imageUrl).toBe(imageUrl);
     expect(page.imageSelected()).toBe(true);
@@ -369,7 +373,8 @@ describe('AdminProductFormPage image upload', () => {
       mediumPrice: 125,
       largePrice: 155,
       price: 125,
-      cloudinaryPublicId: 'legacy-id',
+      // A replacement upload stores the new Cloudinary public_id, not the old one.
+      cloudinaryPublicId: publicId,
     });
     patchRequest.flush({ id: 'p9' });
 
@@ -418,5 +423,58 @@ describe('AdminProductFormPage image upload', () => {
     await saving;
     expect(page.errorMessage()).toBe('');
     httpMock.expectNone(uploadUrl);
+  });
+
+  it('keeps a legacy backend-relative /uploads image without re-uploading it', async () => {
+    getProduct.mockResolvedValue({
+      ...tieredProduct(),
+      imageUrl: '/uploads/legacy-latte.png',
+      cloudinaryPublicId: '',
+    });
+    setup({ id: 'p9' });
+    await waitFor(() => !page.loading());
+
+    // The stored relative path is kept as-is and previewed against the
+    // backend origin, so the old product does not silently lose its image.
+    expect(page.imageUrl).toBe('/uploads/legacy-latte.png');
+    expect(page.imagePreview()).toBe(
+      `${environment.apiBaseUrl.replace(/\/api\/?$/, '')}/uploads/legacy-latte.png`
+    );
+    expect(page.imageSelected()).toBe(false);
+
+    const saving = page.save();
+    const [patchRequest] = await waitForRequest(httpMock, patchUrl);
+    expect(patchRequest.request.body).toMatchObject({
+      imageUrl: '/uploads/legacy-latte.png',
+      cloudinaryPublicId: '',
+    });
+    patchRequest.flush({ id: 'p9' });
+
+    await saving;
+    expect(page.errorMessage()).toBe('');
+    httpMock.expectNone(uploadUrl);
+  });
+
+  it('stores the Cloudinary HTTPS URL directly without prepending the backend URL', async () => {
+    setup();
+    const selection = page.onFileSelected(selectionEvent(pngFile()));
+    const [uploadRequest] = await waitForRequest(httpMock, uploadUrl);
+    uploadRequest.flush({ imageUrl, publicId });
+    await selection;
+
+    expect(page.imageUrl).toBe(imageUrl);
+    expect(page.imageUrl).toMatch(/^https:\/\//);
+    expect(page.imageUrl).not.toContain(environment.apiBaseUrl);
+
+    fillValidForm();
+    const saving = page.save();
+    const [createRequest] = await waitForRequest(httpMock, createUrl);
+    expect(createRequest.request.body).toMatchObject({
+      imageUrl,
+      cloudinaryPublicId: publicId,
+    });
+    createRequest.flush({ id: 'new-product' });
+    await saving;
+    expect(page.errorMessage()).toBe('');
   });
 });

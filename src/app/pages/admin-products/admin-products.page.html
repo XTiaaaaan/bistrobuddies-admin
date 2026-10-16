@@ -85,7 +85,7 @@
               <div class="product-body">
                 <div class="product-media">
                   @if (product.imageUrl) {
-                    <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+                    <img [src]="imageSrc(product)" [alt]="product.name" loading="lazy" />
                   } @else {
                     <ion-icon name="cafe"></ion-icon>
                   }

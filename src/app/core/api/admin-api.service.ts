@@ -12,6 +12,19 @@ import {
 } from '@shared/models/contact-message.model';
 import { AuthService } from '@shared/services/auth.service';
 
+/** Response from `POST /api/admin/uploads` (Cloudinary storage, §6). */
+export interface UploadProductImageResponse {
+  /** Absolute HTTPS Cloudinary `secure_url` to store as `products/{id}.imageUrl`. */
+  imageUrl: string;
+  /** Cloudinary `public_id` (also echoed as `fileName`); stored as `cloudinaryPublicId`. */
+  publicId?: string;
+  /** Backwards-compatible alias of `publicId` from the upload endpoint. */
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
+  uploadedAt?: string;
+}
+
 /** Error raised for backend admin API failures, with the backend status code. */
 export class AdminApiError extends Error {
   constructor(
@@ -63,20 +76,24 @@ export class AdminApiService {
   }
 
   /**
-   * Uploads a product image through the backend's local upload endpoint
+   * Uploads a product image through the backend's Cloudinary upload endpoint
    * (`POST /api/admin/uploads`, `multipart/form-data` with exactly one file
-   * field named `file`) and resolves with the stored absolute `imageUrl`.
+   * field named `file`) and resolves with the stored HTTPS `imageUrl` plus
+   * the Cloudinary `publicId`.
    *
-   * The backend keeps the bytes on its own disk (development-only storage)
-   * and returns just a URL, so the caller sends that URL with the product
-   * write and Firestore stores the URL string — never image data. The
-   * browser must not set `Content-Type` here: it has to include the
-   * multipart boundary, which the runtime adds for a `FormData` body.
+   * The backend keeps the credentials (`CLOUDINARY_*`) server-side and
+   * uploads with the Cloudinary SDK — the browser only sends the admin
+   * Bearer token and the file bytes, and receives back the HTTPS
+   * `secure_url` (`imageUrl`) with `publicId`/`fileName`. The caller sends
+   * that URL (and `publicId` as `cloudinaryPublicId`) with the product
+   * write; Firestore stores those strings — never image data. The browser
+   * must not set `Content-Type` here: it has to include the multipart
+   * boundary, which the runtime adds for a `FormData` body.
    */
-  async uploadProductImage(file: File): Promise<{ imageUrl: string }> {
+  async uploadProductImage(file: File): Promise<UploadProductImageResponse> {
     const form = new FormData();
     form.append('file', file, file.name);
-    return this.request<{ imageUrl: string }>('POST', '/admin/uploads', form);
+    return this.request<UploadProductImageResponse>('POST', '/admin/uploads', form);
   }
 
   /**

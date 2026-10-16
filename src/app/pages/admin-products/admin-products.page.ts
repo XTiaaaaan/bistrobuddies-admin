@@ -23,6 +23,7 @@ import {
   hasLegacyTierPrices,
   productPrice,
 } from '@shared/core/products/product-form';
+import { resolveProductImageSrc } from '@shared/core/products/product-image';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
 import { AdminApiService } from '../../core/api/admin-api.service';
@@ -128,6 +129,15 @@ export class AdminProductsPage implements OnInit {
   /** Canonical PHP price (single-price model, with legacy tier fallback). */
   priceOf(product: Product): string {
     return formatPhp(productPrice(product));
+  }
+
+  /**
+   * `<img src>` for a product: absolute HTTPS Cloudinary URLs render
+   * directly, while legacy backend-relative `/uploads/...` paths resolve
+   * against the backend origin so old products keep their images.
+   */
+  imageSrc(product: Product): string {
+    return resolveProductImageSrc(product.imageUrl);
   }
 
   /**
