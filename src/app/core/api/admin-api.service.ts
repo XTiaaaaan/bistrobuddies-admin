@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProductInput } from '@shared/models/product.model';
-import { OrderStatus } from '@shared/models/order.model';
+import { OrderRefundRequest, OrderStatus, PaymentDecision } from '@shared/models/order.model';
 import {
   ContactMessageListResponse,
   ContactMessageStatus,
@@ -113,6 +113,57 @@ export class AdminApiService {
       'POST',
       `/admin/orders/${encodeURIComponent(orderId)}/status`,
       { orderStatus }
+    );
+  }
+
+  /**
+   * Records a manual GCash payment decision through the backend's authorized
+   * endpoint (`POST /api/admin/orders/:id/payment`, admin only).
+   *
+   * The order must use payment method `GCASH` and currently be `VERIFYING`
+   * with submitted customer details; the backend rejects anything else
+   * (`invalid_payment_method`, `payment_details_required`,
+   * `invalid_payment_transition`). Recording a decision never changes the
+   * fulfilment field `orderStatus` — payment status and order status stay
+   * separate. Like every method here, the caller's administrator role is
+   * re-checked server-side and payment state is never written to Firestore
+   * from this app.
+   */
+  async decideOrderPayment(
+    orderId: string,
+    decision: PaymentDecision
+  ): Promise<{ id: string; paymentStatus: PaymentDecision }> {
+    return this.request<{ id: string; paymentStatus: PaymentDecision }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/payment`,
+      { decision }
+    );
+  }
+
+  /**
+   * Records a manual refund through the backend's authorized endpoint
+   * (`POST /api/admin/orders/:id/refund`, admin only) and resolves with the
+   * updated order's refund facts.
+   *
+   * The order must be `CANCELLED` with a confirmed (`PAID`) payment;
+   * `{ action: 'PENDING' }` opens the refund and never completes it, while
+   * `{ action: 'COMPLETE', confirmed: true }` marks it `REFUNDED` only with
+   * the explicit confirmation that the money was actually sent back
+   * out-of-band. Anything else is rejected by the backend
+   * (`order_not_refundable`, `invalid_refund_transition`,
+   * `refund_already_completed`). The refunded amount is derived from the
+   * stored order snapshot server-side and never sent from here, and the
+   * request never changes `orderStatus` / `paymentStatus`. The live order
+   * listener refreshes the row once the backend commits the write.
+   */
+  async recordOrderRefund(
+    orderId: string,
+    request: OrderRefundRequest
+  ): Promise<{ id: string; refund: { status: string } }> {
+    return this.request<{ id: string; refund: { status: string } }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/refund`,
+      request
     );
   }
 

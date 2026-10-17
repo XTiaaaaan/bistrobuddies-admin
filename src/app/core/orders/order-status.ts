@@ -42,6 +42,16 @@ export function isOrderStatus(value: unknown): value is OrderStatus {
 }
 
 /**
+ * Whether a status means the order was cancelled (by the customer through
+ * `POST /api/orders/:id/cancel`, or otherwise). Cancelled orders are preserved
+ * in Firestore and stay visible in history, but they are terminal: they must
+ * never advance through the normal fulfilment statuses.
+ */
+export function isCancelledOrder(status: unknown): boolean {
+  return status === 'CANCELLED';
+}
+
+/**
  * Transitions the backend will accept from `current`. Unknown or terminal
  * statuses yield an empty list, so the UI offers no status change at all.
  */
@@ -85,7 +95,9 @@ export function orderStatusColor(status: unknown): string {
     case 'COMPLETED':
       return 'success';
     case 'CANCELLED':
-      return 'danger';
+      // Muted (not an error) so a cancelled order reads as inactive history
+      // rather than an alert, while staying distinct from active statuses.
+      return 'medium';
     default:
       return 'medium';
   }

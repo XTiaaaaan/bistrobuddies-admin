@@ -10,7 +10,7 @@ export interface OrderFilterCriteria {
   orderStatus: string;
   /** `ALL` or one payment status. */
   paymentStatus: string;
-  /** `ALL`, `COD` or `ONLINE`. */
+  /** `ALL`, `COD`, `GCASH` or `ONLINE` (legacy value). */
   paymentMethod: string;
   dateRange: OrderDateRange;
 }

@@ -30,12 +30,43 @@ import {
   ORDER_STATUSES,
   allowedNextStatuses,
   canTransition,
+  isCancelledOrder,
   orderStatusColor,
   orderStatusLabel,
 } from '@shared/core/orders/order-status';
-import { Order, OrderStatus } from '@shared/models/order.model';
+import {
+  canConfirmPayment,
+  canDecidePayment,
+  canRejectPayment,
+  gcashAccountName,
+  gcashAccountNumber,
+  hasSubmittedGcashDetails,
+  isGcashOrder,
+  nonGcashPaymentNote,
+  paymentDecisionHint,
+} from '@shared/core/orders/payment-decision';
+import {
+  canCompleteRefund,
+  canStartRefund,
+  refundActionHint,
+  refundAmount,
+  refundStatusColor,
+  refundStatusLabel,
+  refundStatusOf,
+  showRefundStatus,
+} from '@shared/core/orders/refund';
+import {
+  Order,
+  OrderRefundRequest,
+  OrderStatus,
+  PaymentDecision,
+} from '@shared/models/order.model';
 import { OrdersService } from '@shared/services/orders.service';
 import { AdminApiError, AdminApiService } from '../../core/api/admin-api.service';
+
+/** Shown wherever a cancelled order would otherwise offer fulfilment actions. */
+const CANCELLED_ORDER_MESSAGE =
+  'This order was cancelled by the customer and cannot be processed.';
 
 @Component({
   selector: 'admin-orders',
@@ -58,6 +89,16 @@ export class AdminOrdersPage implements OnInit {
   /** Order statuses offered in the filter (mirrors the backend contract). */
   readonly statuses = ORDER_STATUSES;
 
+  /** Explanation shown for cancelled orders in place of fulfilment actions. */
+  readonly cancelledOrderMessage = CANCELLED_ORDER_MESSAGE;
+
+  /**
+   * Explanation prepended to the refund dialogs: BistroBuddies never moves
+   * money itself — the admin returns it manually outside the platform.
+   */
+  readonly manualRefundNotice =
+    'BistroBuddies does not send the money back automatically. The refund must be returned manually outside BistroBuddies (for example from the business GCash account).';
+
   readonly dateRanges: { value: OrderDateRange; label: string }[] = [
     { value: 'ALL', label: 'Any date' },
     { value: 'TODAY', label: 'Today' },
@@ -69,6 +110,10 @@ export class AdminOrdersPage implements OnInit {
   readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   readonly errorMessage = signal('');
   readonly busyId = signal<string | null>(null);
+  /** Order id with an in-flight GCash payment decision (blocks re-clicks). */
+  readonly paymentBusyId = signal<string | null>(null);
+  /** Order id with an in-flight refund request (blocks re-clicks). */
+  readonly refundBusyId = signal<string | null>(null);
 
   readonly search = signal('');
   readonly statusFilter = signal('ALL');
@@ -144,12 +189,23 @@ export class AdminOrdersPage implements OnInit {
     this.search.set(value.trim());
   }
 
+  /** Whether the customer cancelled this order (terminal, never processable). */
+  isCancelled(order: Order): boolean {
+    return isCancelledOrder(order.orderStatus);
+  }
+
   /** Statuses the backend will accept for this order right now. */
   allowedNext(order: Order): OrderStatus[] {
     return allowedNextStatuses(order.orderStatus);
   }
 
   async requestStatusChange(order: Order, next: OrderStatus): Promise<void> {
+    // Guard first: a cancelled order must never re-enter fulfilment through
+    // the UI, even if a button is somehow triggered programmatically.
+    if (this.isCancelled(order)) {
+      await this.showError(CANCELLED_ORDER_MESSAGE);
+      return;
+    }
     if (!canTransition(order.orderStatus, next)) {
       await this.showError(
         `Order status cannot move from ${String(order.orderStatus)} to ${next}.`
@@ -181,6 +237,12 @@ export class AdminOrdersPage implements OnInit {
    * written to Firestore from this app, and payment status is untouched.
    */
   private async applyStatus(order: Order, next: OrderStatus): Promise<void> {
+    // Defense in depth: the dialog is only reachable for allowed transitions,
+    // but the writer itself refuses to process a cancelled order.
+    if (this.isCancelled(order)) {
+      await this.showError(CANCELLED_ORDER_MESSAGE);
+      return;
+    }
     this.busyId.set(order.id);
     try {
       await this.adminApi.updateOrderStatus(order.id, next);
@@ -210,8 +272,337 @@ export class AdminOrdersPage implements OnInit {
     await toast.present();
   }
 
+  // -- Manual GCash payment verification (no gateway) -----------------------
+  //
+  // Customers submit `{ accountName, accountNumber }` from their own GCash
+  // app; an admin verifies the actual received transaction out-of-band and
+  // records the decision here via `POST /api/admin/orders/:id/payment`.
+  // The submitted details never prove payment — only this admin decision
+  // marks an order PAID — and recording it never changes `orderStatus`.
+  // Reads keep coming from the live Firestore order listener, which refreshes
+  // the row once the backend writes the decision.
+
+  isGcashOrder(order: Order): boolean {
+    return isGcashOrder(order);
+  }
+
+  hasGcashDetails(order: Order): boolean {
+    return hasSubmittedGcashDetails(order);
+  }
+
+  gcashName(order: Order): string {
+    return gcashAccountName(order);
+  }
+
+  gcashNumber(order: Order): string {
+    return gcashAccountNumber(order);
+  }
+
+  canConfirmPayment(order: Order): boolean {
+    return canConfirmPayment(order);
+  }
+
+  canRejectPayment(order: Order): boolean {
+    return canRejectPayment(order);
+  }
+
+  paymentHint(order: Order): string | null {
+    return paymentDecisionHint(order);
+  }
+
+  nonGcashNote(order: Order): string {
+    return nonGcashPaymentNote(order);
+  }
+
+  /** Whether any payment-decision request is running for this order. */
+  isPaymentBusy(order: Order): boolean {
+    return this.paymentBusyId() === order.id;
+  }
+
+  async requestPaymentDecision(
+    order: Order,
+    decision: PaymentDecision
+  ): Promise<void> {
+    if (this.isPaymentBusy(order)) {
+      return;
+    }
+    if (!canDecidePayment(order, decision)) {
+      const hint = paymentDecisionHint(order);
+      await this.showError(
+        hint ??
+          'This order cannot receive a payment decision right now. Refresh and try again.'
+      );
+      return;
+    }
+
+    const action = decision === 'PAID' ? 'Confirm payment' : 'Reject payment';
+    const alert = await this.alertCtrl.create({
+      header: `${action}?`,
+      message:
+        decision === 'PAID'
+          ? `Only confirm when you have verified the actual received GCash transaction for order ${shortId(order.id)} in the BistroBuddies GCash account. The submitted account name does not prove payment. Confirming records payment as PAID; the order fulfilment status stays ${String(order.orderStatus)}.`
+          : `Only reject after checking GCash and finding no matching transaction for order ${shortId(order.id)}. The customer can resubmit GCash details afterwards. The order fulfilment status stays ${String(order.orderStatus)}.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: action,
+          handler: () => {
+            void this.applyPaymentDecision(order, decision);
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  /**
+   * Sends the decision to the backend. The response is the server's
+   * confirmation; the live order listener refreshes the row. Nothing is ever
+   * written to Firestore from this app, and the fulfilment status is
+   * untouched.
+   */
+  async applyPaymentDecision(
+    order: Order,
+    decision: PaymentDecision
+  ): Promise<void> {
+    if (this.paymentBusyId() === order.id) {
+      return;
+    }
+    this.paymentBusyId.set(order.id);
+    try {
+      const result = await this.adminApi.decideOrderPayment(order.id, decision);
+      const toast = await this.toastCtrl.create({
+        message:
+          result.paymentStatus === 'PAID'
+            ? 'Payment confirmed as PAID.'
+            : 'Payment rejected. The customer can resubmit GCash details.',
+        duration: 2500,
+        color: result.paymentStatus === 'PAID' ? 'success' : 'warning',
+      });
+      await toast.present();
+    } catch (error) {
+      await this.showError(
+        error instanceof AdminApiError
+          ? error.message
+          : 'Could not record the payment decision. Please try again.'
+      );
+    } finally {
+      this.paymentBusyId.set(null);
+    }
+  }
+
   itemsOf(order: Order): Order['items'] {
     return order.items ?? [];
+  }
+
+  // -- Manual refunds for cancelled paid orders (no gateway) ---------------
+  //
+  // When a CANCELLED order already has a confirmed (PAID) payment, the admin
+  // returns the money manually outside BistroBuddies (e.g. through the
+  // business GCash app) and records the outcome here via
+  // `POST /api/admin/orders/:id/refund`. Opening a refund records it only as
+  // `REFUND_PENDING` and never marks it completed; completing it requires a
+  // second confirmation and is only done after the money was actually sent
+  // back and the transaction verified. Refund state lives on the order
+  // document (`refund` / `refundAudit`), the live Firestore listener
+  // refreshes the row once the backend commits, and nothing here modifies
+  // `orderStatus` or `paymentStatus` — existing payment data and audit
+  // history are never touched or deleted.
+
+  /** Normalized backend refund status for this order. */
+  refundStatus(order: Order): string {
+    return refundStatusOf(order);
+  }
+
+  /** Whether the refund status is worth displaying for this order. */
+  showsRefundStatus(order: Order): boolean {
+    return showRefundStatus(order);
+  }
+
+  /** PHP amount to be returned (recorded amount, or the paid total). */
+  refundOf(order: Order): number | null {
+    return refundAmount(order);
+  }
+
+  /** Whether the Refund (record pending) action applies to this order. */
+  canStartRefund(order: Order): boolean {
+    return canStartRefund(order);
+  }
+
+  /** Whether the Mark-refund-completed action applies to this order. */
+  canCompleteRefund(order: Order): boolean {
+    return canCompleteRefund(order);
+  }
+
+  refundLabel(status: unknown): string {
+    return refundStatusLabel(status);
+  }
+
+  refundColor(status: unknown): string {
+    return refundStatusColor(status);
+  }
+
+  /** Whether any refund request is running for this order. */
+  isRefundBusy(order: Order): boolean {
+    return this.refundBusyId() === order.id;
+  }
+
+  /** Why no refund action applies right now, or `null` when one does. */
+  refundHint(order: Order): string | null {
+    if (canStartRefund(order) || canCompleteRefund(order)) {
+      return null;
+    }
+    return refundActionHint(order);
+  }
+
+  /**
+   * Opens the confirmation dialog for recording a pending refund. This only
+   * opens the refund record — the money is returned afterwards manually
+   * outside BistroBuddies and the refund is later completed separately; a
+   * completed refund is never recorded by simply clicking Refund.
+   */
+  async requestRefund(order: Order): Promise<void> {
+    if (this.isRefundBusy(order) || this.busyId() === order.id) {
+      return;
+    }
+    if (!this.canStartRefund(order)) {
+      await this.showError(
+        this.refundHint(order) ??
+          'This order cannot be refunded right now. Refresh and try again.'
+      );
+      return;
+    }
+
+    const alert = await this.alertCtrl.create({
+      header: 'Record pending refund?',
+      message: `Return ${formatPhp(
+        refundAmount(order) ?? order.total
+      )} to the customer manually outside BistroBuddies (for example from the business GCash app). Recording the refund only opens it as REFUND_PENDING — it does not return the money and does not mark the refund completed. Amount recorded: the full paid total of order ${shortId(
+        order.id
+      )}. The fulfilment status stays ${String(order.orderStatus)}.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Record as pending',
+          handler: () => {
+            void this.applyRefund(order, { action: 'PENDING' });
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  /**
+   * Opens the two-step confirmation for marking the refund completed. The
+   * first dialog requires the money to have actually been returned and the
+   * transaction verified; the second confirmation makes the final,
+   * irreversible call. The backend never allows completing a refund that
+   * was not first recorded as pending.
+   */
+  async requestRefundCompleted(order: Order): Promise<void> {
+    if (this.isRefundBusy(order) || this.busyId() === order.id) {
+      return;
+    }
+    if (!this.canCompleteRefund(order)) {
+      await this.showError(
+        this.refundHint(order) ??
+          'This refund cannot be completed right now. Refresh and try again.'
+      );
+      return;
+    }
+
+    const alert = await this.alertCtrl.create({
+      header: 'Mark refund completed?',
+      message: `Only do this after you have actually returned ${formatPhp(
+        refundAmount(order) ?? order.total
+      )} to the customer manually outside BistroBuddies and verified the transaction. Marking it completed is permanent: this order can never be refunded again and a mistake cannot be undone. The payment status stays ${String(
+        order.paymentStatus
+      )} and the fulfilment status stays ${String(order.orderStatus)}.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Continue',
+          handler: () => {
+            void this.confirmRefundCompleted(order);
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  /** Second confirmation gate before `{ action: 'COMPLETE' }` is sent. */
+  private async confirmRefundCompleted(order: Order): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Final confirmation',
+      message: `Confirm again: the refund money for order ${shortId(
+        order.id
+      )} has been returned to the customer and the transaction verified. This records the refund as REFUNDED and cannot be undone.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Mark completed',
+          handler: () => {
+            void this.applyRefund(order, {
+              action: 'COMPLETE',
+              confirmed: true,
+            });
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  /**
+   * Sends the refund action to the backend. The response is the server's
+   * confirmation; the live order listener refreshes the row. The fairness
+   * rules stay server-side: the amount is derived from the stored paid
+   * order, `orderStatus` / `paymentStatus` are untouched, and the manual
+   * GCash verification workflow is unaffected.
+   */
+  async applyRefund(
+    order: Order,
+    request: OrderRefundRequest
+  ): Promise<void> {
+    if (this.refundBusyId() === order.id) {
+      return;
+    }
+    // Handler-level block: even if a stale button was triggered or the
+    // document is mid-flight, an ineligible order never reaches the API.
+    if (
+      request.action === 'PENDING'
+        ? !this.canStartRefund(order)
+        : !this.canCompleteRefund(order)
+    ) {
+      await this.showError(
+        this.refundHint(order) ??
+          'This refund action is not allowed for this order right now.'
+      );
+      return;
+    }
+    this.refundBusyId.set(order.id);
+    try {
+      const result = await this.adminApi.recordOrderRefund(order.id, request);
+      const toast = await this.toastCtrl.create({
+        message:
+          result.refund.status === 'REFUNDED'
+            ? 'Refund marked as completed after your second confirmation.'
+            : 'Refund recorded as pending. Return the money manually outside BistroBuddies, then mark the refund completed once the money was sent and verified.',
+        duration: 3000,
+        color: 'success',
+      });
+      await toast.present();
+    } catch (error) {
+      await this.showError(
+        error instanceof AdminApiError
+          ? error.message
+          : 'Could not record the refund. Please try again.'
+      );
+    } finally {
+      this.refundBusyId.set(null);
+    }
   }
 
   customerName(order: Order): string {
@@ -260,6 +651,7 @@ export class AdminOrdersPage implements OnInit {
   paymentStatusColor(status: unknown): string {
     switch (String(status ?? '').toUpperCase()) {
       case 'PENDING':
+      case 'VERIFYING':
       case 'PROCESSING':
         return 'warning';
       case 'PAID':
@@ -267,6 +659,7 @@ export class AdminOrdersPage implements OnInit {
       case 'CAPTURED':
       case 'COMPLETED':
         return 'success';
+      case 'REJECTED':
       case 'FAILED':
       case 'REFUNDED':
       case 'CANCELLED':
@@ -277,7 +670,8 @@ export class AdminOrdersPage implements OnInit {
   }
 
   paymentMethodColor(method: unknown): string {
-    return String(method ?? '').toUpperCase() === 'ONLINE'
+    const normalized = String(method ?? '').toUpperCase();
+    return normalized === 'ONLINE' || normalized === 'GCASH'
       ? 'primary'
       : 'tertiary';
   }

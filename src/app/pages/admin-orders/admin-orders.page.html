@@ -71,7 +71,8 @@
       >
         <ion-select-option value="ALL">Any method</ion-select-option>
         <ion-select-option value="COD">COD</ion-select-option>
-        <ion-select-option value="ONLINE">ONLINE</ion-select-option>
+        <ion-select-option value="GCASH">GCASH</ion-select-option>
+        <ion-select-option value="ONLINE">ONLINE (legacy)</ion-select-option>
       </ion-select>
 
       <ion-select
@@ -148,6 +149,11 @@
                 <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
                   {{ order.paymentMethod }}
                 </ion-badge>
+                @if (showsRefundStatus(order)) {
+                  <ion-badge [color]="refundColor(refundStatus(order))">
+                    Refund: {{ refundStatus(order) }}
+                  </ion-badge>
+                }
               </div>
               <div class="order-date">{{ formatDate(order.createdAt) }}</div>
             </div>
@@ -229,7 +235,11 @@
                     {{ statusLabel(order.orderStatus) }}
                   </ion-badge>
                 </p>
-                @if (allowedNext(order).length > 0) {
+                @if (isCancelled(order)) {
+                  <p class="muted cancelled-note">
+                    {{ cancelledOrderMessage }}
+                  </p>
+                } @else if (allowedNext(order).length > 0) {
                   <div class="status-actions">
                     @for (next of allowedNext(order); track next) {
                       <ion-button
@@ -260,11 +270,140 @@
                     {{ order.paymentStatus }}
                   </ion-badge>
                 </p>
+                @if (isGcashOrder(order)) {
+                  @if (hasGcashDetails(order)) {
+                    <p>
+                      GCash account name:
+                      <strong>{{ gcashName(order) }}</strong>
+                    </p>
+                    <p>
+                      GCash mobile number:
+                      <strong>{{ gcashNumber(order) }}</strong>
+                    </p>
+                  } @else {
+                    <p class="muted">
+                      No GCash details submitted yet. Actions appear once
+                      the customer submits their GCash account name and
+                      mobile number.
+                    </p>
+                  }
+                  @if (canConfirmPayment(order) || canRejectPayment(order)) {
+                    <div class="status-actions">
+                      @if (canConfirmPayment(order)) {
+                        <ion-button
+                          size="small"
+                          color="success"
+                          [disabled]="
+                            isPaymentBusy(order) || busyId() === order.id
+                          "
+                          (click)="requestPaymentDecision(order, 'PAID')"
+                        >
+                          Confirm payment
+                        </ion-button>
+                      }
+                      @if (canRejectPayment(order)) {
+                        <ion-button
+                          size="small"
+                          color="danger"
+                          fill="outline"
+                          [disabled]="
+                            isPaymentBusy(order) || busyId() === order.id
+                          "
+                          (click)="requestPaymentDecision(order, 'REJECTED')"
+                        >
+                          Reject payment
+                        </ion-button>
+                      }
+                    </div>
+                    @if (isPaymentBusy(order)) {
+                      <p class="muted">Recording the payment decision…</p>
+                    }
+                  } @else if (paymentHint(order)) {
+                    <p class="muted">{{ paymentHint(order) }}</p>
+                  }
+                } @else {
+                  <p class="muted">{{ nonGcashNote(order) }}</p>
+                }
                 <p class="muted">
-                  Payment status is set by the backend only and cannot be
-                  changed from this screen.
+                  Payment status is set by the backend only and is separate
+                  from the order fulfilment status above. Confirming payment
+                  never completes the order.
                 </p>
               </section>
+
+              @if (showsRefundStatus(order)) {
+                <section class="order-block">
+                  <h3>Refund</h3>
+                  <p class="status-line">
+                    Status:
+                    <ion-badge [color]="refundColor(refundStatus(order))">
+                      {{ refundStatus(order) }}
+                    </ion-badge>
+                  </p>
+                  @if (refundOf(order) !== null) {
+                    <p>
+                      Refund amount:
+                      <strong>{{ formatMoney(refundOf(order)) }}</strong>
+                    </p>
+                  }
+                  @if (order.refund?.requestedAt) {
+                    <p>
+                      Requested: {{ formatDate(order.refund.requestedAt) }}
+                    </p>
+                  }
+                  @if (order.refund?.completedAt) {
+                    <p>
+                      Completed: {{ formatDate(order.refund.completedAt) }}
+                    </p>
+                  }
+                  @if (refundStatus(order) === 'REFUNDED') {
+                    <p class="muted">
+                      The refund was marked completed after the money was
+                      returned manually outside BistroBuddies.
+                    </p>
+                  } @else {
+                    <p class="muted">
+                      {{ manualRefundNotice }}
+                    </p>
+                  }
+                  @if (canStartRefund(order) || canCompleteRefund(order)) {
+                    <div class="status-actions">
+                      @if (canStartRefund(order)) {
+                        <ion-button
+                          size="small"
+                          [disabled]="
+                            isRefundBusy(order) || busyId() === order.id
+                          "
+                          (click)="requestRefund(order)"
+                        >
+                          Refund
+                        </ion-button>
+                      }
+                      @if (canCompleteRefund(order)) {
+                        <ion-button
+                          size="small"
+                          color="success"
+                          [disabled]="
+                            isRefundBusy(order) || busyId() === order.id
+                          "
+                          (click)="requestRefundCompleted(order)"
+                        >
+                          Mark refund completed
+                        </ion-button>
+                      }
+                    </div>
+                    @if (isRefundBusy(order)) {
+                      <p class="muted">Recording the refund…</p>
+                    }
+                  } @else if (refundHint(order)) {
+                    <p class="muted">{{ refundHint(order) }}</p>
+                  }
+                  <p class="muted">
+                    Recording a refund never changes the order fulfilment or
+                    payment status above, and never deletes payment details.
+                  </p>
+                </section>
+              }
             </div>
           </ion-card>
         }

@@ -158,6 +158,11 @@
   margin-top: 8px;
 }
 
+/* Cancelled orders are terminal history, not an actionable alert. */
+.cancelled-note {
+  font-style: italic;
+}
+
 @media (max-width: 700px) {
   .order-head {
     padding: 12px;

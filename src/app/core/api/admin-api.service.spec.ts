@@ -23,6 +23,12 @@ describe('AdminApiService', () => {
 
   const listUrl = `${environment.apiBaseUrl}/admin/contact-messages`;
 
+  const paymentUrl = (orderId: string) =>
+    `${environment.apiBaseUrl}/admin/orders/${orderId}/payment`;
+
+  const refundUrl = (orderId: string) =>
+    `${environment.apiBaseUrl}/admin/orders/${orderId}/refund`;
+
   function sampleMessage() {
     return {
       id: 'msg-1',
@@ -417,5 +423,218 @@ describe('AdminApiService', () => {
     httpMock.expectNone(
       (req) => req.url.includes('/admin/contact-messages/') && req.method === 'PATCH'
     );
+  });
+
+  it('confirms a GCash payment through the payment endpoint', async () => {
+    const promise = api.decideOrderPayment('order-1', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(paymentUrl('order-1'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ decision: 'PAID' });
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer test-id-token'
+    );
+
+    request.flush({ id: 'order-1', paymentStatus: 'PAID' });
+
+    await expect(promise).resolves.toEqual({
+      id: 'order-1',
+      paymentStatus: 'PAID',
+    });
+    expect(getIdToken).toHaveBeenCalled();
+  });
+
+  it('rejects a GCash payment through the payment endpoint', async () => {
+    const promise = api.decideOrderPayment('order-2', 'REJECTED');
+    await tick();
+
+    const request = httpMock.expectOne(paymentUrl('order-2'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ decision: 'REJECTED' });
+
+    request.flush({ id: 'order-2', paymentStatus: 'REJECTED' });
+    await expect(promise).resolves.toEqual({
+      id: 'order-2',
+      paymentStatus: 'REJECTED',
+    });
+  });
+
+  it('never sends order status with a payment decision', async () => {
+    const promise = api.decideOrderPayment('order-3', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(paymentUrl('order-3'));
+    expect(request.request.body).toEqual({ decision: 'PAID' });
+    expect(JSON.stringify(request.request.body)).not.toContain('orderStatus');
+
+    request.flush({ id: 'order-3', paymentStatus: 'PAID' });
+    await promise;
+  });
+
+  it('encodes the order id in the payment endpoint path', async () => {
+    const promise = api.decideOrderPayment('order / 1', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(
+      (req) =>
+        req.method === 'POST' &&
+        req.url ===
+          `${environment.apiBaseUrl}/admin/orders/order%20%2F%201/payment`
+    );
+    expect(request.request.body).toEqual({ decision: 'PAID' });
+    request.flush({ id: 'order / 1', paymentStatus: 'PAID' });
+    await promise;
+  });
+
+  it('surfaces a backend refusal to decide (for example a COD order)', async () => {
+    const promise = api.decideOrderPayment('order-cod', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(paymentUrl('order-cod'));
+    request.flush(
+      {
+        error: {
+          code: 'invalid_payment_method',
+          message: 'Only GCash orders can receive a GCash payment decision.',
+        },
+      },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    await expect(promise).rejects.toMatchObject({
+      name: 'AdminApiError',
+      status: 409,
+      message: 'Only GCash orders can receive a GCash payment decision.',
+    });
+  });
+
+  it('surfaces missing GCash details reported by the backend', async () => {
+    const promise = api.decideOrderPayment('order-pending', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(paymentUrl('order-pending'));
+    request.flush(
+      {
+        error: {
+          code: 'payment_details_required',
+          message:
+            'The customer must submit GCash payment details before an admin can decide.',
+        },
+      },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    await expect(promise).rejects.toBeInstanceOf(AdminApiError);
+    await expect(promise).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('does not record a payment decision when nobody is signed in', async () => {
+    getIdToken.mockResolvedValue(null);
+
+    await expect(api.decideOrderPayment('order-4', 'PAID')).rejects.toMatchObject(
+      { name: 'AdminApiError', status: 401 }
+    );
+    await tick();
+    httpMock.expectNone(paymentUrl('order-4'));
+  });
+
+  it('opens a refund through the refund endpoint with action PENDING', async () => {
+    const promise = api.recordOrderRefund('order-1', { action: 'PENDING' });
+    await tick();
+
+    const request = httpMock.expectOne(refundUrl('order-1'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ action: 'PENDING' });
+    expect(JSON.stringify(request.request.body)).not.toContain('confirmed');
+    expect(JSON.stringify(request.request.body)).not.toContain('amount');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer test-id-token'
+    );
+
+    request.flush({
+      id: 'order-1',
+      refund: { status: 'REFUND_PENDING', amount: 215 },
+    });
+
+    await expect(promise).resolves.toEqual({
+      id: 'order-1',
+      refund: { status: 'REFUND_PENDING', amount: 215 },
+    });
+    expect(getIdToken).toHaveBeenCalled();
+  });
+
+  it('completes a refund only with the explicit confirmed flag', async () => {
+    const promise = api.recordOrderRefund('order-2', {
+      action: 'COMPLETE',
+      confirmed: true,
+    });
+    await tick();
+
+    const request = httpMock.expectOne(refundUrl('order-2'));
+    expect(request.request.body).toEqual({ action: 'COMPLETE', confirmed: true });
+    expect(JSON.stringify(request.request.body)).not.toContain('orderStatus');
+    expect(JSON.stringify(request.request.body)).not.toContain('payment');
+
+    request.flush({
+      id: 'order-2',
+      refund: { status: 'REFUNDED', amount: 215 },
+    });
+    await expect(promise).resolves.toEqual({
+      id: 'order-2',
+      refund: { status: 'REFUNDED', amount: 215 },
+    });
+  });
+
+  it('encodes the order id in the refund endpoint path', async () => {
+    const promise = api.recordOrderRefund('order / 1', { action: 'PENDING' });
+    await tick();
+
+    const request = httpMock.expectOne(
+      (req) =>
+        req.method === 'POST' &&
+        req.url ===
+          `${environment.apiBaseUrl}/admin/orders/order%20%2F%201/refund`
+    );
+    expect(request.request.body).toEqual({ action: 'PENDING' });
+    request.flush({
+      id: 'order / 1',
+      refund: { status: 'REFUND_PENDING', amount: 215 },
+    });
+    await promise;
+  });
+
+  it('surfaces a backend refusal to refund (ineligible order)', async () => {
+    const promise = api.recordOrderRefund('order-cod', { action: 'PENDING' });
+    await tick();
+
+    const request = httpMock.expectOne(refundUrl('order-cod'));
+    request.flush(
+      {
+        error: {
+          code: 'order_not_refundable',
+          message:
+            'Only cancelled orders with a confirmed (PAID) payment can be refunded.',
+        },
+      },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    await expect(promise).rejects.toMatchObject({
+      name: 'AdminApiError',
+      status: 409,
+      message:
+        'Only cancelled orders with a confirmed (PAID) payment can be refunded.',
+    });
+  });
+
+  it('does not record a refund when nobody is signed in', async () => {
+    getIdToken.mockResolvedValue(null);
+
+    await expect(
+      api.recordOrderRefund('order-3', { action: 'PENDING' })
+    ).rejects.toMatchObject({ name: 'AdminApiError', status: 401 });
+    await tick();
+    httpMock.expectNone(refundUrl('order-3'));
   });
 });
