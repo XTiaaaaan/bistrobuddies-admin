@@ -10,7 +10,8 @@ export interface OrderFilterCriteria {
   orderStatus: string;
   /** `ALL` or one payment status. */
   paymentStatus: string;
-  /** `ALL`, `COD`, `GCASH` or `ONLINE` (legacy value). */
+  /** `ALL`, `COD` or `GCASH`. Historic documents may still carry the
+   *  removed legacy `ONLINE` value; it is never a filter option. */
   paymentMethod: string;
   dateRange: OrderDateRange;
 }
@@ -125,12 +126,18 @@ export function filterOrders(
   });
 }
 
-/** Payment statuses present in the loaded data (for the filter dropdown). */
+/**
+ * Payment statuses present in the loaded data (for the filter dropdown).
+ * The removed legacy `SIMULATED_PAID` value is never offered — historic
+ * documents that still carry it are shown under "Any" but cannot be filtered
+ * by that token.
+ */
 export function paymentStatusOptions(orders: Order[]): string[] {
   const values = new Set<string>();
   for (const order of orders) {
-    if (order.paymentStatus) {
-      values.add(order.paymentStatus);
+    const status = order.paymentStatus;
+    if (status && status.toUpperCase() !== 'SIMULATED_PAID') {
+      values.add(status);
     }
   }
   return [...values].sort();

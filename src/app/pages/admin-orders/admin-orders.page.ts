@@ -671,8 +671,6 @@ export class AdminOrdersPage implements OnInit {
 
   paymentMethodColor(method: unknown): string {
     const normalized = String(method ?? '').toUpperCase();
-    return normalized === 'ONLINE' || normalized === 'GCASH'
-      ? 'primary'
-      : 'tertiary';
+    return normalized === 'GCASH' ? 'primary' : 'tertiary';
   }
 }

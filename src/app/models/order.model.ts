@@ -9,7 +9,7 @@ export type OrderStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
-export type PaymentMethod = 'COD' | 'ONLINE' | 'GCASH';
+export type PaymentMethod = 'COD' | 'GCASH';
 
 /**
  * Manual GCash verification states owned by the backend (`PENDING`,

@@ -33,7 +33,7 @@ export function gcashAccountNumber(order: Order): string {
 
 /**
  * Whether the order carries usable submitted GCash details. `false` is the
- * normal state for COD orders, legacy `ONLINE` orders, GCash orders still
+ * normal state for COD orders, GCash orders still
  * waiting for the customer, and historical orders pre-dating the GCash
  * fields.
  */

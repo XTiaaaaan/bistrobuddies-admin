@@ -242,4 +242,13 @@ describe('order list helpers', () => {
     ];
     expect(paymentStatusOptions(orders)).toEqual(['PAID', 'PENDING']);
   });
+
+  it('never offers the removed legacy SIMULATED_PAID status as a filter option', () => {
+    const orders = [
+      makeOrder(),
+      makeOrder({ id: 'order-2', paymentStatus: 'SIMULATED_PAID' }),
+      makeOrder({ id: 'order-3', paymentStatus: 'simulated_paid' }),
+    ];
+    expect(paymentStatusOptions(orders)).toEqual(['PENDING']);
+  });
 });
