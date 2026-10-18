@@ -7,6 +7,7 @@ import {
   IonInput,
   IonItem,
   IonList,
+  IonSpinner,
 } from '@ionic/angular';
 import { authErrorMessage } from '@shared/core/auth/auth-errors';
 import {
@@ -19,7 +20,7 @@ import {
   templateUrl: './admin-login.page.html',
   styleUrls: ['./admin-login.page.scss'],
   standalone: true,
-  imports: [FormsModule, IonButton, IonContent, IonInput, IonItem, IonList],
+  imports: [FormsModule, IonButton, IonContent, IonInput, IonItem, IonList, IonSpinner],
 })
 export class AdminLoginPage implements OnInit {
   email = '';
@@ -42,6 +43,9 @@ export class AdminLoginPage implements OnInit {
   }
 
   async signIn(): Promise<void> {
+    if (this.loading()) {
+      return;
+    }
     if (!this.credentialsValid()) {
       return;
     }

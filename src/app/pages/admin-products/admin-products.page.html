@@ -1,7 +1,12 @@
 <ion-content>
   <div class="admin-page">
     <div class="admin-page-header">
-      <h1>Products</h1>
+      <div class="header-text">
+        <h1>Products</h1>
+        <p class="admin-page-sub">
+          {{ products().length }} items on the BistroBuddies menu
+        </p>
+      </div>
       <ion-button routerLink="/products/new">
         <ion-icon slot="start" name="add"></ion-icon>
         Add Product
@@ -27,73 +32,142 @@
         <ion-button routerLink="/products/new">Add Product</ion-button>
       </div>
     } @else {
-      <div class="product-list">
-        @for (product of products(); track product.id) {
-          <ion-card class="product-card">
-            <div class="product-body">
-              <div class="product-media">
-                @if (product.imageUrl) {
-                  <img [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
-                } @else {
-                  <ion-icon name="cafe"></ion-icon>
-                }
-              </div>
+      <div class="filter-bar" role="search">
+        <ion-searchbar
+          class="filter-search"
+          placeholder="Search by name, description or category"
+          aria-label="Search products"
+          debounce="200"
+          [value]="search()"
+          (ionInput)="onSearch($event.detail.value ?? '')"
+        ></ion-searchbar>
 
-              <div class="product-info">
-                <div class="product-title-row">
-                  <h2>{{ product.name }}</h2>
-                  <ion-badge [color]="isAvailable(product) ? 'success' : 'danger'">
-                    {{ isAvailable(product) ? 'Available' : 'Unavailable' }}
-                  </ion-badge>
-                </div>
+        <ion-select
+          class="filter-select"
+          label="Category"
+          labelPlacement="stacked"
+          interface="popover"
+          fill="outline"
+          [value]="categoryFilter()"
+          (ionChange)="categoryFilter.set($event.detail.value)"
+        >
+          <ion-select-option value="ALL">All categories</ion-select-option>
+          @for (option of categoryOptions(); track option) {
+            <ion-select-option [value]="option">{{ option }}</ion-select-option>
+          }
+        </ion-select>
 
-                @if (product.category) {
-                  <ion-chip color="secondary">{{ product.category }}</ion-chip>
-                }
-
-                <p class="product-description">{{ product.description }}</p>
-
-                <div class="price-row">
-                  <span class="price-main">{{ priceOf(product) }}</span>
-                  @if (tiersLabel(product); as tiers) {
-                    <span class="price-tiers">{{ tiers }}</span>
-                  }
-                </div>
-              </div>
-
-              <div class="product-actions">
-                <ion-toggle
-                  labelPlacement="start"
-                  label="Available"
-                  [checked]="isAvailable(product)"
-                  [disabled]="busyId() === product.id"
-                  (ionChange)="toggleAvailability(product, $event.detail.checked)"
-                ></ion-toggle>
-
-                <ion-button
-                  size="small"
-                  fill="outline"
-                  [routerLink]="['/products', product.id]"
-                >
-                  <ion-icon slot="start" name="create"></ion-icon>
-                  Edit
-                </ion-button>
-
-                <ion-button
-                  size="small"
-                  color="danger"
-                  fill="outline"
-                  [disabled]="busyId() === product.id"
-                  (click)="confirmDelete(product)"
-                >
-                  <ion-icon slot="start" name="trash"></ion-icon>
-                  Delete
-                </ion-button>
-              </div>
-            </div>
-          </ion-card>
+        @if (filtersActive()) {
+          <ion-button
+            class="filter-clear"
+            fill="clear"
+            size="small"
+            (click)="clearFilters()"
+          >
+            Clear filters
+          </ion-button>
         }
       </div>
+
+      @if (filteredProducts().length === 0) {
+        <div class="admin-state" role="status">
+          <ion-icon name="cafe"></ion-icon>
+          <h3>No matching products</h3>
+          <p>Nothing matches the current search and filters.</p>
+          <ion-button fill="outline" (click)="clearFilters()">
+            Clear filters
+          </ion-button>
+        </div>
+      } @else {
+        @if (filtersActive()) {
+          <p class="results-count" role="status">
+            Showing {{ filteredProducts().length }} of
+            {{ products().length }} products
+          </p>
+        }
+        <div class="product-list bb-stagger">
+          @for (product of filteredProducts(); track product.id) {
+            <ion-card class="product-card">
+              <div class="product-body">
+                <div class="product-media">
+                  @if (product.imageUrl) {
+                    <img [src]="imageSrc(product)" [alt]="product.name" loading="lazy" />
+                  } @else {
+                    <ion-icon name="cafe"></ion-icon>
+                  }
+                </div>
+
+                <div class="product-info">
+                  <div class="product-title-row">
+                    <h2>{{ product.name }}</h2>
+                    <ion-badge [color]="isAvailable(product) ? 'success' : 'danger'">
+                      {{ isAvailable(product) ? 'Available' : 'Unavailable' }}
+                    </ion-badge>
+                  </div>
+
+                  @if (product.category) {
+                    <ion-chip color="secondary">{{ product.category }}</ion-chip>
+                  }
+
+                  @if (product.description) {
+                    <p class="product-description">
+                      {{ product.description }}
+                    </p>
+                  }
+
+                  <div class="price-row">
+                    <span class="price-main">{{ priceOf(product) }}</span>
+                    @if (sizePriceChips(product); as chips) {
+                      <span
+                        class="price-chips"
+                        [title]="tiersLabel(product)"
+                      >
+                        @for (chip of chips; track chip.label) {
+                          <span class="price-chip">
+                            {{ chip.label }} {{ chip.price }}
+                          </span>
+                        }
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <div class="product-actions">
+                  <ion-toggle
+                    labelPlacement="start"
+                    label="Available"
+                    [checked]="isAvailable(product)"
+                    [disabled]="busyId() === product.id"
+                    (ionChange)="toggleAvailability(product, $event.detail.checked)"
+                  ></ion-toggle>
+
+                  <div class="action-buttons">
+                    <ion-button
+                      size="small"
+                      fill="outline"
+                      [routerLink]="['/products', product.id]"
+                    >
+                      <ion-icon slot="start" name="create"></ion-icon>
+                      Edit
+                    </ion-button>
+
+                    <ion-button
+                      size="small"
+                      color="danger"
+                      fill="outline"
+                      [disabled]="busyId() === product.id"
+                      (click)="confirmDelete(product)"
+                    >
+                      <ion-icon slot="start" name="trash"></ion-icon>
+                      Delete
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+            </ion-card>
+          }
+        </div>
+      }
     }
   </div>
 </ion-content>

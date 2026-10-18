@@ -11,6 +11,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonSpinner,
+  IonTextarea,
   IonToggle,
   ToastController,
 } from '@ionic/angular';
@@ -23,13 +24,17 @@ import {
   buildProductInput,
   sizePricesForEdit,
 } from '@shared/core/products/product-form';
+import { resolveProductImageSrc } from '@shared/core/products/product-image';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
 import {
   AdminApiError,
   AdminApiService,
 } from '../../core/api/admin-api.service';
-import { ProductImageUploadService } from '../../core/api/product-image-upload.service';
+import {
+  ProductImageUploadService,
+  UploadedProductImage,
+} from '../../core/api/product-image-upload.service';
 
 /** Sugar choices supported by the customer app today. */
 const SUGAR_CHOICES = ['No Sugar', 'Less Sugar', 'Regular', 'Extra Sugar'];
@@ -70,6 +75,7 @@ function uploadFailureMessage(error: unknown): string {
     IonSelect,
     IonSelectOption,
     IonSpinner,
+    IonTextarea,
     IonToggle,
   ],
 })
@@ -124,8 +130,14 @@ export class AdminProductFormPage implements OnInit {
 
   /** File selected but not yet confirmed by the backend upload endpoint. */
   private pendingFile: File | null = null;
+  /**
+   * Cloudinary `public_id` confirmed by the backend for the current `imageUrl`.
+   * Null until an upload succeeds; the product's existing identifier is used
+   * otherwise, so a form that never replaces the image keeps its stored id.
+   */
+  private uploadedPublicId: string | null = null;
   /** Upload started for `pendingFile`, shared so save() waits for it. */
-  private uploadInFlight: Promise<string> | null = null;
+  private uploadInFlight: Promise<UploadedProductImage> | null = null;
   /** Bumped on every selection change so a stale upload is never applied. */
   private uploadGeneration = 0;
 
@@ -227,15 +239,16 @@ export class AdminProductFormPage implements OnInit {
 
     this.pendingFile = file;
     this.imageSelected.set(true);
+    this.uploadedPublicId = null;
     this.uploadNotice.set('');
     this.uploadNoticeError.set(false);
     this.uploading.set(true);
     try {
-      const imageUrl = await this.startUpload();
+      const uploaded = await this.startUpload();
       if (generation !== this.uploadGeneration) {
         return;
       }
-      this.applyUploaded(imageUrl);
+      this.applyUploaded(uploaded.imageUrl, uploaded.publicId);
     } catch (error) {
       if (generation !== this.uploadGeneration) {
         return;
@@ -281,9 +294,13 @@ export class AdminProductFormPage implements OnInit {
     try {
       // 1) Image upload — no-op unless a new file was selected. A failure
       //    aborts the save, so a product is never written with a stale URL.
-      const imageUrl = await this.ensureImageUploaded();
-      // 2) Product write carrying the URL the backend returned.
-      const input = { ...draft.input, imageUrl };
+      const uploaded = await this.ensureImageUploaded();
+      // 2) Product write carrying the HTTPS URL + publicId the backend returned.
+      const input = {
+        ...draft.input,
+        imageUrl: uploaded.imageUrl,
+        cloudinaryPublicId: uploaded.publicId,
+      };
       const id = this.productId();
       if (id) {
         await this.adminApi.updateProduct(id, input);
@@ -311,24 +328,27 @@ export class AdminProductFormPage implements OnInit {
   }
 
   /**
-   * Resolves with the `imageUrl` the product must store: it uploads the
-   * pending file (waiting for an upload that is already in flight instead of
-   * sending it twice) and otherwise returns the URL already on the form.
-   * Rejects when the upload did not succeed, so `save()` reports failure and
-   * never claims the product was saved.
+   * Resolves with the `imageUrl` + `publicId` the product must store: it
+   * uploads the pending file (waiting for an upload that is already in
+   * flight instead of sending it twice) and otherwise returns the URL and
+   * identifier already on the form. Rejects when the upload did not succeed,
+   * so `save()` reports failure and never claims the product was saved.
    */
-  private async ensureImageUploaded(): Promise<string> {
+  private async ensureImageUploaded(): Promise<{ imageUrl: string; publicId: string }> {
     if (!this.pendingFile) {
-      return this.imageUrl.trim();
+      return {
+        imageUrl: this.imageUrl.trim(),
+        publicId: this.uploadedPublicId ?? this.existing?.cloudinaryPublicId ?? '',
+      };
     }
 
     this.uploading.set(true);
     this.uploadNotice.set('');
     this.uploadNoticeError.set(false);
     try {
-      const imageUrl = await this.startUpload();
-      this.applyUploaded(imageUrl);
-      return imageUrl;
+      const uploaded = await this.startUpload();
+      this.applyUploaded(uploaded.imageUrl, uploaded.publicId);
+      return { imageUrl: uploaded.imageUrl, publicId: uploaded.publicId };
     } catch (error) {
       // The file stays selected: the next save attempt retries the upload.
       this.uploadInFlight = null;
@@ -342,10 +362,13 @@ export class AdminProductFormPage implements OnInit {
   }
 
   /** Starts the upload for the pending file, or reuses the running one. */
-  private startUpload(): Promise<string> {
+  private startUpload(): Promise<UploadedProductImage> {
     const file = this.pendingFile;
     if (!file) {
-      return Promise.resolve(this.imageUrl.trim());
+      return Promise.resolve({
+        imageUrl: this.imageUrl.trim(),
+        publicId: this.uploadedPublicId ?? this.existing?.cloudinaryPublicId ?? '',
+      });
     }
     if (!this.uploadInFlight) {
       this.uploadInFlight = this.imageUpload.upload(file);
@@ -353,9 +376,14 @@ export class AdminProductFormPage implements OnInit {
     return this.uploadInFlight;
   }
 
-  /** Stores the URL the backend confirmed and marks the file as uploaded. */
-  private applyUploaded(imageUrl: string): void {
+  /**
+   * Stores the HTTPS URL + publicId the backend confirmed and marks the file
+   * as uploaded. The URL goes into the existing product image field; the
+   * publicId goes into `cloudinaryPublicId` on save.
+   */
+  private applyUploaded(imageUrl: string, publicId: string): void {
     this.imageUrl = imageUrl;
+    this.uploadedPublicId = publicId;
     this.pendingFile = null;
     this.uploadInFlight = null;
     this.uploadNotice.set('Image uploaded. Only this URL is saved with the product.');
@@ -382,9 +410,11 @@ export class AdminProductFormPage implements OnInit {
         this.categoryOptions.set([...this.knownCategories].sort());
       }
       // The saved image is kept exactly as stored: nothing is uploaded unless
-      // the admin picks a replacement file.
+      // the admin picks a replacement file. Legacy backend-relative
+      // `/uploads/...` URLs resolve against the backend origin for preview;
+      // absolute HTTPS Cloudinary URLs render directly.
       this.imageUrl = product.imageUrl ?? '';
-      this.imagePreview.set(this.imageUrl || null);
+      this.imagePreview.set(resolveProductImageSrc(this.imageUrl) || null);
       const sizes = sizePricesForEdit(product);
       this.smallPrice = sizes.small;
       this.mediumPrice = sizes.medium;
@@ -409,6 +439,7 @@ export class AdminProductFormPage implements OnInit {
     this.uploadGeneration++; // an upload still in flight becomes stale
     this.uploadInFlight = null;
     this.pendingFile = null;
+    this.uploadedPublicId = null;
     this.imageUrl = '';
     this.imagePreview.set(null);
     this.imageSelected.set(false);

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
@@ -9,6 +9,9 @@ import {
   IonChip,
   IonContent,
   IonIcon,
+  IonSearchbar,
+  IonSelect,
+  IonSelectOption,
   IonSpinner,
   IonToggle,
   ToastController,
@@ -20,6 +23,7 @@ import {
   hasLegacyTierPrices,
   productPrice,
 } from '@shared/core/products/product-form';
+import { resolveProductImageSrc } from '@shared/core/products/product-image';
 import { Product } from '@shared/models/product.model';
 import { ProductsService } from '@shared/services/products.service';
 import { AdminApiService } from '../../core/api/admin-api.service';
@@ -37,6 +41,9 @@ import { AdminApiService } from '../../core/api/admin-api.service';
     IonChip,
     IonContent,
     IonIcon,
+    IonSearchbar,
+    IonSelect,
+    IonSelectOption,
     IonSpinner,
     IonToggle,
   ],
@@ -45,6 +52,43 @@ export class AdminProductsPage implements OnInit {
   readonly products = signal<Product[]>([]);
   readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   readonly busyId = signal<string | null>(null);
+
+  readonly search = signal('');
+  readonly categoryFilter = signal('ALL');
+
+  /** Every category present in the catalogue, sorted for the filter select. */
+  readonly categoryOptions = computed(() => {
+    const names = new Set<string>();
+    for (const product of this.products()) {
+      if (product.category) {
+        names.add(product.category);
+      }
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  });
+
+  /** Products matching the current search text and category filter. */
+  readonly filteredProducts = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    const category = this.categoryFilter();
+    return this.products().filter((product) => {
+      if (category !== 'ALL' && (product.category ?? '') !== category) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+      return (
+        product.name.toLowerCase().includes(query) ||
+        (product.description ?? '').toLowerCase().includes(query) ||
+        (product.category ?? '').toLowerCase().includes(query)
+      );
+    });
+  });
+
+  readonly filtersActive = computed(
+    () => this.search().trim() !== '' || this.categoryFilter() !== 'ALL'
+  );
 
   private readonly productsService = inject(ProductsService);
   private readonly adminApi = inject(AdminApiService);
@@ -73,9 +117,27 @@ export class AdminProductsPage implements OnInit {
     return product.available !== false;
   }
 
+  onSearch(value: string): void {
+    this.search.set(value.trim());
+  }
+
+  clearFilters(): void {
+    this.search.set('');
+    this.categoryFilter.set('ALL');
+  }
+
   /** Canonical PHP price (single-price model, with legacy tier fallback). */
   priceOf(product: Product): string {
     return formatPhp(productPrice(product));
+  }
+
+  /**
+   * `<img src>` for a product: absolute HTTPS Cloudinary URLs render
+   * directly, while legacy backend-relative `/uploads/...` paths resolve
+   * against the backend origin so old products keep their images.
+   */
+  imageSrc(product: Product): string {
+    return resolveProductImageSrc(product.imageUrl);
   }
 
   /**
@@ -91,10 +153,38 @@ export class AdminProductsPage implements OnInit {
     )} · Large ${formatPhp(product.largePrice)}`;
   }
 
+  /**
+   * Compact per-size price chips rendered beside the canonical price when a
+   * product carries tiered pricing (presentation only).
+   */
+  sizePriceChips(
+    product: Product
+  ): { label: string; price: string }[] | null {
+    if (!hasLegacyTierPrices(product)) {
+      return null;
+    }
+    return [
+      { label: 'Small', price: formatPhp(product.smallPrice) },
+      { label: 'Medium', price: formatPhp(product.mediumPrice) },
+      { label: 'Large', price: formatPhp(product.largePrice) },
+    ];
+  }
+
   async toggleAvailability(product: Product, checked: boolean): Promise<void> {
+    if (this.busyId() !== null) {
+      return;
+    }
     this.busyId.set(product.id);
     try {
       await this.adminApi.updateProduct(product.id, { available: checked });
+      const toast = await this.toastCtrl.create({
+        message: checked
+          ? `"${product.name}" is now available.`
+          : `"${product.name}" is now unavailable.`,
+        duration: 2500,
+        color: 'success',
+      });
+      await toast.present();
     } catch {
       product.available = !checked;
       await this.showError('Could not update availability. Please try again.');
@@ -122,9 +212,18 @@ export class AdminProductsPage implements OnInit {
   }
 
   private async deleteProduct(product: Product): Promise<void> {
+    if (this.busyId() !== null) {
+      return;
+    }
     this.busyId.set(product.id);
     try {
       await this.adminApi.deleteProduct(product.id);
+      const toast = await this.toastCtrl.create({
+        message: `"${product.name}" was deleted from the menu.`,
+        duration: 2500,
+        color: 'success',
+      });
+      await toast.present();
     } catch {
       await this.showError('Could not delete the product. Please try again.');
     } finally {

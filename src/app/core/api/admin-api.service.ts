@@ -3,8 +3,28 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProductInput } from '@shared/models/product.model';
-import { OrderStatus } from '@shared/models/order.model';
+import { OrderRefundRequest, OrderStatus, PaymentDecision } from '@shared/models/order.model';
+import {
+  ContactMessageListResponse,
+  ContactMessageReplyResponse,
+  ContactMessageStatus,
+  ContactMessageStatusUpdate,
+  ContactMessageStatusUpdateResponse,
+} from '@shared/models/contact-message.model';
 import { AuthService } from '@shared/services/auth.service';
+
+/** Response from `POST /api/admin/uploads` (Cloudinary storage, §6). */
+export interface UploadProductImageResponse {
+  /** Absolute HTTPS Cloudinary `secure_url` to store as `products/{id}.imageUrl`. */
+  imageUrl: string;
+  /** Cloudinary `public_id` (also echoed as `fileName`); stored as `cloudinaryPublicId`. */
+  publicId?: string;
+  /** Backwards-compatible alias of `publicId` from the upload endpoint. */
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
+  uploadedAt?: string;
+}
 
 /** Error raised for backend admin API failures, with the backend status code. */
 export class AdminApiError extends Error {
@@ -57,20 +77,24 @@ export class AdminApiService {
   }
 
   /**
-   * Uploads a product image through the backend's local upload endpoint
+   * Uploads a product image through the backend's Cloudinary upload endpoint
    * (`POST /api/admin/uploads`, `multipart/form-data` with exactly one file
-   * field named `file`) and resolves with the stored absolute `imageUrl`.
+   * field named `file`) and resolves with the stored HTTPS `imageUrl` plus
+   * the Cloudinary `publicId`.
    *
-   * The backend keeps the bytes on its own disk (development-only storage)
-   * and returns just a URL, so the caller sends that URL with the product
-   * write and Firestore stores the URL string — never image data. The
-   * browser must not set `Content-Type` here: it has to include the
-   * multipart boundary, which the runtime adds for a `FormData` body.
+   * The backend keeps the credentials (`CLOUDINARY_*`) server-side and
+   * uploads with the Cloudinary SDK — the browser only sends the admin
+   * Bearer token and the file bytes, and receives back the HTTPS
+   * `secure_url` (`imageUrl`) with `publicId`/`fileName`. The caller sends
+   * that URL (and `publicId` as `cloudinaryPublicId`) with the product
+   * write; Firestore stores those strings — never image data. The browser
+   * must not set `Content-Type` here: it has to include the multipart
+   * boundary, which the runtime adds for a `FormData` body.
    */
-  async uploadProductImage(file: File): Promise<{ imageUrl: string }> {
+  async uploadProductImage(file: File): Promise<UploadProductImageResponse> {
     const form = new FormData();
     form.append('file', file, file.name);
-    return this.request<{ imageUrl: string }>('POST', '/admin/uploads', form);
+    return this.request<UploadProductImageResponse>('POST', '/admin/uploads', form);
   }
 
   /**
@@ -93,10 +117,134 @@ export class AdminApiService {
     );
   }
 
+  /**
+   * Records a manual GCash payment decision through the backend's authorized
+   * endpoint (`POST /api/admin/orders/:id/payment`, admin only).
+   *
+   * The order must use payment method `GCASH` and currently be `VERIFYING`
+   * with submitted customer details; the backend rejects anything else
+   * (`invalid_payment_method`, `payment_details_required`,
+   * `invalid_payment_transition`). Recording a decision never changes the
+   * fulfilment field `orderStatus` — payment status and order status stay
+   * separate. Like every method here, the caller's administrator role is
+   * re-checked server-side and payment state is never written to Firestore
+   * from this app.
+   */
+  async decideOrderPayment(
+    orderId: string,
+    decision: PaymentDecision
+  ): Promise<{ id: string; paymentStatus: PaymentDecision }> {
+    return this.request<{ id: string; paymentStatus: PaymentDecision }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/payment`,
+      { decision }
+    );
+  }
+
+  /**
+   * Records a manual refund through the backend's authorized endpoint
+   * (`POST /api/admin/orders/:id/refund`, admin only) and resolves with the
+   * updated order's refund facts.
+   *
+   * The order must be `CANCELLED` with a confirmed (`PAID`) payment;
+   * `{ action: 'PENDING' }` opens the refund and never completes it, while
+   * `{ action: 'COMPLETE', confirmed: true }` marks it `REFUNDED` only with
+   * the explicit confirmation that the money was actually sent back
+   * out-of-band. Anything else is rejected by the backend
+   * (`order_not_refundable`, `invalid_refund_transition`,
+   * `refund_already_completed`). The refunded amount is derived from the
+   * stored order snapshot server-side and never sent from here, and the
+   * request never changes `orderStatus` / `paymentStatus`. The live order
+   * listener refreshes the row once the backend commits the write.
+   */
+  async recordOrderRefund(
+    orderId: string,
+    request: OrderRefundRequest
+  ): Promise<{ id: string; refund: { status: string } }> {
+    return this.request<{ id: string; refund: { status: string } }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/refund`,
+      request
+    );
+  }
+
+  /**
+   * Lists customer "Contact Us" messages through the backend's admin
+   * endpoint (`GET /api/admin/contact-messages`, admin only), newest first.
+   *
+   * The messages collection is private: clients have no Firestore access to
+   * it, so this HTTP endpoint is the only way the admin site reads it. The
+   * backend strips `userId` from every row — only the submission fields and
+   * the workflow status reach the browser.
+   */
+  async listContactMessages(
+    query: {
+      status?: ContactMessageStatus;
+      page?: number;
+      pageSize?: number;
+    } = {}
+  ): Promise<ContactMessageListResponse> {
+    const params: Record<string, string> = {};
+    if (query.status) {
+      params['status'] = query.status;
+    }
+    if (query.page !== undefined) {
+      params['page'] = String(query.page);
+    }
+    if (query.pageSize !== undefined) {
+      params['pageSize'] = String(query.pageSize);
+    }
+    return this.request<ContactMessageListResponse>(
+      'GET',
+      '/admin/contact-messages',
+      undefined,
+      Object.keys(params).length > 0 ? params : undefined
+    );
+  }
+
+  /**
+   * Changes a contact message's workflow status through the backend's
+   * authorized endpoint (`PATCH /api/admin/contact-messages/:id/status`,
+   * admin only). Only `READ` and `RESOLVED` are accepted; `NEW` is the
+   * server-assigned initial status and can never be re-applied.
+   */
+  async updateContactMessageStatus(
+    messageId: string,
+    status: ContactMessageStatusUpdate
+  ): Promise<ContactMessageStatusUpdateResponse> {
+    return this.request<ContactMessageStatusUpdateResponse>(
+      'PATCH',
+      `/admin/contact-messages/${encodeURIComponent(messageId)}/status`,
+      { status }
+    );
+  }
+
+  /**
+   * Sends an administrator's reply to a customer message through the
+   * backend's authorized endpoint (`POST
+   * /api/admin/contact-messages/:id/replies`, admin only).
+   *
+   * Only the reply text is sent — the sender role and timestamp are decided
+   * server-side. The response returns the backend-confirmed reply plus the
+   * message's post-reply status (a NEW message becomes READ); nothing here
+   * ever fakes a stored reply.
+   */
+  async replyToContactMessage(
+    messageId: string,
+    reply: string
+  ): Promise<ContactMessageReplyResponse> {
+    return this.request<ContactMessageReplyResponse>(
+      'POST',
+      `/admin/contact-messages/${encodeURIComponent(messageId)}/replies`,
+      { reply }
+    );
+  }
+
   private async request<T>(
-    method: 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     path: string,
-    body?: unknown
+    body?: unknown,
+    params?: Record<string, string>
   ): Promise<T> {
     const token = await this.auth.getIdToken();
     if (!token) {
@@ -107,6 +255,7 @@ export class AdminApiService {
       return await firstValueFrom(
         this.http.request<T>(method, `${this.baseUrl}${path}`, {
           body,
+          params,
           headers: { Authorization: `Bearer ${token}` },
         })
       );

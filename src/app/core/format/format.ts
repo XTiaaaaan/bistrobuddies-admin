@@ -54,10 +54,10 @@ export function formatDateTime(
   });
 }
 
-/** Short, human readable order reference (`#a1b2c3d4`). */
+/** Short, human readable order reference (`#bistro4839201756`). */
 export function shortId(id: string): string {
   if (!id) {
     return '—';
   }
-  return id.length > 12 ? `${id.slice(0, 12)}…` : id;
+  return id.length > 16 ? `${id.slice(0, 16)}…` : id;
 }

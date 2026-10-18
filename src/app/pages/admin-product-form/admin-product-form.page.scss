@@ -1,143 +1,218 @@
-.admin-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 48px 16px;
-  text-align: center;
-  color: #6b4a35;
+.product-form {
+  max-width: 760px;
 }
 
-.product-form {
-  max-width: 640px;
+.form-panel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-card);
+  padding: var(--bb-space-5);
+  margin-bottom: var(--bb-space-4);
+  box-sizing: border-box;
+}
+
+.form-panel h2 {
+  margin: 0 0 var(--bb-space-1);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--bb-espresso);
 }
 
 .form-list {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  overflow: hidden;
+  background: transparent;
   padding: 0;
-  margin: 0 0 18px;
+  margin: var(--bb-space-3) 0 0;
 }
 
 .form-list ion-item {
-  --background: var(--admin-surface);
+  --background: var(--bb-surface-sunken);
+  --background-hover: var(--bb-surface-sunken);
+  --border-radius: var(--bb-radius-md);
+  --min-height: 58px;
+  margin-bottom: var(--bb-space-3);
+  transition: box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
-.image-section,
-.sugar-section {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
+.form-list ion-item:focus-within {
+  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
 }
 
-.image-section h2,
-.sugar-section h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+.form-list ion-textarea {
+  --placeholder-color: var(--bb-text-soft);
+  --color: var(--bb-text);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.section-hint,
-.sugar-hint {
-  margin: 4px 0 10px;
+/* Size prices sit side by side when there is room, stack on mobile. */
+.price-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--bb-space-3);
+}
+
+.price-list ion-item {
+  margin-bottom: 0;
+}
+
+.section-hint {
+  margin: var(--bb-space-2) 0 0;
   font-size: 13px;
-  color: #6b4a35;
+  line-height: 1.5;
+  color: var(--bb-text-muted);
+}
+
+/* ── Image upload ── */
+
+.upload-zone {
+  margin-top: var(--bb-space-3);
+  padding: var(--bb-space-4);
+  max-width: 480px;
+  border: 1.5px dashed var(--bb-border-strong);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface-sunken);
+  transition: border-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.upload-zone:focus-within {
+  border-color: var(--bb-coffee);
 }
 
 .image-file-input {
   display: block;
   width: 100%;
-  max-width: 420px;
   font: inherit;
   font-size: 14px;
-  color: #3b2418;
+  color: var(--bb-espresso);
 }
 
 .image-file-input::file-selector-button {
   margin-right: 12px;
-  padding: 8px 14px;
-  border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  background: #faf6f1;
-  color: #3b2418;
+  padding: 9px 16px;
+  border: 1px solid var(--bb-espresso);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-espresso);
+  color: #ffffff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    transform var(--bb-motion-fast) var(--bb-ease);
+}
+
+.image-file-input::file-selector-button:hover {
+  background: #4e3626;
+  border-color: #4e3626;
+}
+
+.image-file-input::file-selector-button:active {
+  transform: scale(0.98);
 }
 
 .image-preview {
-  margin-top: 12px;
-  max-width: 240px;
-  border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  margin-top: var(--bb-space-4);
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
   overflow: hidden;
-  background: #faf6f1;
+  background: var(--bb-surface-sunken);
+  box-shadow: var(--bb-shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-preview img {
   display: block;
   width: 100%;
-  height: auto;
-}
-
-.section-notice {
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #fff6e6;
-  color: #8a5a12;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.section-notice--error {
-  background: #fdecea;
-  color: #a1281c;
-}
-
-.section-notice--success {
-  background: #e9f7ef;
-  color: #1d7a3f;
+  height: 100%;
+  object-fit: contain;
 }
 
 .section-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: var(--bb-space-2);
+  margin: var(--bb-space-3) 0 0;
   font-size: 13px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
+}
+
+.section-status ion-spinner {
+  width: 18px;
+  height: 18px;
+  color: var(--bb-coffee);
+}
+
+.admin-notice {
+  margin: var(--bb-space-3) 0 0;
 }
 
 .sugar-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--bb-space-2);
+  margin-top: var(--bb-space-3);
+}
+
+.sugar-chips ion-button {
+  --border-radius: var(--bb-radius-pill);
+  --border-color: var(--bb-border-strong);
+  --color: var(--bb-text-muted);
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.sugar-chips ion-button[color='primary'] {
+  --background: var(--bb-espresso);
+  --background-hover: #4e3626;
+  --border-color: var(--bb-espresso);
+  --color: #ffffff;
+}
+
+.sugar-chips ion-button[color='medium'] {
+  --background: transparent;
+  --background-hover: var(--bb-surface-sunken);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--bb-space-3);
   flex-wrap: wrap;
+  margin-top: var(--bb-space-1);
 }
 
 .form-actions ion-button {
-  --background: #3b2418;
-  --background-hover: #4f3628;
+  --background: var(--bb-espresso);
+  --background-hover: #4e3626;
+  --border-radius: var(--bb-radius-md);
+  height: 44px;
   font-weight: 600;
 }
 
 .form-actions ion-button[fill='outline'] {
   --background: transparent;
-  --color: #3b2418;
+  --background-hover: var(--bb-surface-sunken);
+  --color: var(--bb-espresso);
+  --border-color: var(--bb-border-strong);
 }
 
 @media (max-width: 600px) {
+  .form-panel {
+    padding: var(--bb-space-4);
+  }
+
+  .price-list {
+    grid-template-columns: 1fr;
+  }
+
   .form-actions {
     justify-content: stretch;
   }

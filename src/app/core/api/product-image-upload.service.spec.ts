@@ -68,16 +68,71 @@ describe('ProductImageUploadService', () => {
     expect(request.request.headers.get('Content-Type')).toBeNull();
 
     request.flush({
-      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
-      path: '/uploads/1-latte.png',
-      fileName: '1-latte.png',
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: 'bistrobuddies/latte-abc123',
+      fileName: 'bistrobuddies/latte-abc123',
       mimeType: 'image/png',
       size: file.size,
     });
 
-    await expect(promise).resolves.toBe(
-      'http://localhost:3001/uploads/1-latte.png'
-    );
+    await expect(promise).resolves.toEqual({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: 'bistrobuddies/latte-abc123',
+    });
+  });
+
+  it('reads the publicId from the fileName alias when publicId is missing', async () => {
+    const promise = upload.upload(pngFile());
+    await tick();
+
+    httpMock.expectOne(uploadUrl).flush({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      fileName: 'bistrobuddies/latte-abc123',
+      mimeType: 'image/png',
+      size: 11,
+    });
+
+    await expect(promise).resolves.toEqual({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: 'bistrobuddies/latte-abc123',
+    });
+  });
+
+  it('keeps an empty publicId when the backend returns no identifier', async () => {
+    const promise = upload.upload(pngFile());
+    await tick();
+
+    httpMock.expectOne(uploadUrl).flush({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      mimeType: 'image/png',
+      size: 11,
+    });
+
+    await expect(promise).resolves.toEqual({
+      imageUrl:
+        'https://res.cloudinary.com/test-cloud/image/upload/v1/bistrobuddies/latte-abc123',
+      publicId: '',
+    });
+  });
+
+  it('rejects a non-HTTPS image URL instead of saving it', async () => {
+    const promise = upload.upload(pngFile());
+    await tick();
+
+    httpMock.expectOne(uploadUrl).flush({
+      imageUrl: 'http://localhost:3001/uploads/1-latte.png',
+      path: '/uploads/1-latte.png',
+      fileName: '1-latte.png',
+      mimeType: 'image/png',
+      size: 11,
+    });
+
+    await expect(promise).rejects.toThrow(/secure image URL/);
   });
 
   it('surfaces backend upload failures with their status', async () => {
@@ -137,7 +192,7 @@ describe('ProductImageUploadService', () => {
     const promise = upload.upload(pngFile());
     await tick();
 
-    httpMock.expectOne(uploadUrl).flush({ path: '/uploads/1.png' });
+    httpMock.expectOne(uploadUrl).flush({ publicId: 'bistrobuddies/1' });
 
     await expect(promise).rejects.toThrow(/image URL/);
   });

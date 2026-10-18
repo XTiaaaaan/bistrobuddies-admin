@@ -131,6 +131,35 @@ describe('filterOrders', () => {
     ).toEqual(['order-1', 'order-2']);
   });
 
+  it('keeps cancelled orders visible and filterable', () => {
+    const orders = [
+      makeOrder({ id: 'active' }),
+      makeOrder({ id: 'cancelled-1', orderStatus: 'CANCELLED' }),
+      makeOrder({ id: 'cancelled-2', orderStatus: 'CANCELLED' }),
+    ];
+
+    // Cancelled history is never dropped from the unfiltered list.
+    expect(filterOrders(orders, criteria(), now).map((o) => o.id)).toEqual([
+      'active',
+      'cancelled-1',
+      'cancelled-2',
+    ]);
+
+    // The CANCELLED filter option returns exactly the cancelled orders.
+    expect(
+      filterOrders(orders, criteria({ orderStatus: 'CANCELLED' }), now).map(
+        (o) => o.id
+      )
+    ).toEqual(['cancelled-1', 'cancelled-2']);
+
+    // Search still reaches cancelled orders by their id/status text.
+    expect(
+      filterOrders(orders, criteria({ search: 'cancelled' }), now).map(
+        (o) => o.id
+      )
+    ).toEqual(['cancelled-1', 'cancelled-2']);
+  });
+
   it('filters by date range and drops orders without a date', () => {
     const nowDate = new Date('2026-10-05T12:00:00.000Z');
     const referenceNow = nowDate.getTime();
@@ -212,5 +241,14 @@ describe('order list helpers', () => {
       makeOrder({ id: 'order-3', paymentStatus: 'PAID' }),
     ];
     expect(paymentStatusOptions(orders)).toEqual(['PAID', 'PENDING']);
+  });
+
+  it('never offers the removed legacy SIMULATED_PAID status as a filter option', () => {
+    const orders = [
+      makeOrder(),
+      makeOrder({ id: 'order-2', paymentStatus: 'SIMULATED_PAID' }),
+      makeOrder({ id: 'order-3', paymentStatus: 'simulated_paid' }),
+    ];
+    expect(paymentStatusOptions(orders)).toEqual(['PENDING']);
   });
 });

@@ -61,8 +61,18 @@ No secrets belong in this repository.
 - **Order status transitions** go through the backend
   (`POST /api/admin/orders/:id/status`) from the Orders page
   (`src/app/pages/admin-orders/`). Allowed moves are checked against the
-  backend's status graph before they are offered; payment status is
-  display-only because only the backend may change it.
+  backend's status graph before they are offered. Confirming payment never
+  changes the fulfilment status.
+- **Manual GCash verification** (no gateway) also goes through the backend:
+  the Orders page shows the submitted GCash account name + mobile number and
+  records the admin decision with
+  `POST /api/admin/orders/:id/payment` (`{"decision":"PAID"}` or
+  `{"decision":"REJECTED"}`) after an out-of-band check of the actual GCash
+  transaction. Only `VERIFYING` GCash orders with submitted details offer
+  Confirm/Reject; COD orders, orders without details, and `PAID` orders
+  offer no decision. Payment state is never written to Firestore from this
+  app — the live order listener refreshes the row once the backend writes
+  the decision.
 - **Products are single-price**: the form sends one `price`, and the backend
   keeps the legacy `small/medium/largePrice` fields in sync for
   compatibility. A legacy tiered document is flattened to its medium price on

@@ -3,6 +3,7 @@ import {
   ORDER_STATUS_TRANSITIONS,
   allowedNextStatuses,
   canTransition,
+  isCancelledOrder,
   isOrderStatus,
   orderStatusColor,
   orderStatusLabel,
@@ -60,13 +61,38 @@ describe('order status helpers', () => {
     expect(isOrderStatus(7)).toBe(false);
   });
 
+  it('recognizes cancelled orders', () => {
+    expect(ORDER_STATUSES).toContain('CANCELLED');
+    expect(isOrderStatus('CANCELLED')).toBe(true);
+    expect(isCancelledOrder('CANCELLED')).toBe(true);
+    expect(isCancelledOrder('PENDING')).toBe(false);
+    expect(isCancelledOrder('COMPLETED')).toBe(false);
+    expect(isCancelledOrder(undefined)).toBe(false);
+    expect(isCancelledOrder('cancelled')).toBe(false);
+  });
+
+  it('treats cancelled orders as terminal — no fulfilment moves', () => {
+    expect(allowedNextStatuses('CANCELLED')).toEqual([]);
+    for (const next of [
+      'PENDING',
+      'CONFIRMED',
+      'PREPARING',
+      'READY',
+      'COMPLETED',
+    ]) {
+      expect(canTransition('CANCELLED', next)).toBe(false);
+    }
+  });
+
   it('labels and colors statuses for display', () => {
     expect(orderStatusLabel('PENDING')).toBe('Pending');
     expect(orderStatusLabel('CANCELLED')).toBe('Cancelled');
     expect(orderStatusLabel('SOMETHING_ELSE')).toBe('SOMETHING_ELSE');
     expect(orderStatusColor('PENDING')).toBe('warning');
     expect(orderStatusColor('COMPLETED')).toBe('success');
-    expect(orderStatusColor('CANCELLED')).toBe('danger');
+    // Cancelled uses a muted (not alert) color.
+    expect(orderStatusColor('CANCELLED')).toBe('medium');
+    expect(orderStatusColor('CANCELLED')).not.toBe(orderStatusColor('PENDING'));
     expect(orderStatusColor('unknown')).toBe('medium');
   });
 });

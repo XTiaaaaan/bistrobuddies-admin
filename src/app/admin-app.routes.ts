@@ -55,6 +55,14 @@ export const adminRoutes: Routes = [
       ),
   },
   {
+    path: 'messages',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('./pages/admin-messages/admin-messages.page').then(
+        (m) => m.AdminMessagesPage
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

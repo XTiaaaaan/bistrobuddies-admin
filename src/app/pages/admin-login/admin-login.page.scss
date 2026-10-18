@@ -5,9 +5,67 @@
 .admin-login-page {
   min-height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 20px;
   padding: 32px 16px;
+  box-sizing: border-box;
+}
+
+/*
+ * Espresso brand hero — same treatment as the customer app's login screen:
+ * a dark rounded panel with the circular logo badge and serif wordmark.
+ */
+.admin-login-hero {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bb-espresso);
+  border-radius: var(--bb-radius-lg);
+  padding: 26px 16px 22px;
+  box-shadow: 0 10px 26px rgba(59, 35, 20, 0.2);
+}
+
+.admin-login-logo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.admin-login-brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.admin-login-brand .brand-bistro,
+.admin-login-brand .brand-buddies {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 26px;
+}
+
+.admin-login-brand .brand-bistro {
+  color: #ffffff;
+}
+
+.admin-login-brand .brand-buddies {
+  color: var(--bb-tan);
+}
+
+.admin-login-tagline {
+  margin: 4px 0 0;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(245, 235, 224, 0.85);
+  text-align: center;
 }
 
 .admin-login-card {
@@ -15,30 +73,24 @@
   max-width: 420px;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
-  padding: 28px 24px;
-  box-shadow: 0 12px 30px rgba(59, 36, 24, 0.12);
+  border-radius: var(--bb-radius-card);
+  padding: 26px 24px;
+  box-shadow: var(--bb-shadow-card);
+  box-sizing: border-box;
 }
 
-.admin-login-brand {
+.admin-login-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 18px;
 }
 
-.admin-login-brand img {
-  height: 64px;
-}
-
-.admin-login-brand h1 {
-  margin: 10px 0 4px;
-  font-size: 22px;
-  color: #3b2418;
-}
-
-.admin-login-brand p {
-  margin: 0;
+.admin-login-subtitle {
+  margin: 0 0 18px;
+  text-align: center;
   font-size: 14px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
 }
 
 .admin-login-fields {
@@ -48,20 +100,25 @@
 }
 
 .admin-login-fields ion-item {
-  --background: #faf6f1;
-  --border-radius: 8px;
-  margin-bottom: 10px;
+  --background: var(--bb-surface-sunken);
+  --background-hover: var(--bb-surface-sunken);
+  --border-radius: var(--bb-radius-md);
+  --min-height: 58px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  margin-bottom: 12px;
+  transition: box-shadow var(--bb-motion-fast) var(--bb-ease);
+}
+
+.admin-login-fields ion-item:focus-within {
+  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
 }
 
 .admin-login-submit {
-  --background: #3b2418;
-  --background-hover: #4f3628;
-  font-weight: 600;
-}
-
-.admin-login-note {
-  margin: 16px 0 0;
-  text-align: center;
-  font-size: 13px;
-  color: #6b4a35;
+  --background: var(--bb-espresso);
+  --background-hover: #4e3626;
+  --border-radius: var(--bb-radius-md);
+  height: 50px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }

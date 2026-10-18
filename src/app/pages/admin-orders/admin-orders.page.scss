@@ -1,61 +1,115 @@
-.admin-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 48px 16px;
-  text-align: center;
-  color: #6b4a35;
-}
-
-.admin-state ion-icon {
-  font-size: 42px;
-}
-
-.header-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #6b4a35;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 12px;
-  margin-bottom: 18px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 10px;
-}
-
-.filter-search {
-  flex: 1 1 260px;
-  min-width: 200px;
-  --background: transparent;
-  padding-inline-start: 0;
-}
-
-.filter-select {
-  flex: 0 1 190px;
-  min-width: 150px;
-  --background: transparent;
-}
-
-.filter-clear {
-  align-self: center;
-}
-
 .order-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--bb-space-4);
 }
+
+/* ── Summary quick-filter chips ── */
+
+.summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bb-space-2);
+  margin-bottom: var(--bb-space-4);
+}
+
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  min-height: 36px;
+  border: 1px solid var(--bb-border-strong);
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-surface);
+  color: var(--bb-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.summary-chip strong {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-surface-sunken);
+  color: var(--bb-espresso);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.summary-chip:hover {
+  border-color: var(--bb-coffee);
+}
+
+.summary-chip--active {
+  background: var(--bb-espresso);
+  border-color: var(--bb-espresso);
+  color: #f0e4d6;
+}
+
+.summary-chip--active strong,
+.summary-chip--active:hover {
+  color: #ffffff;
+}
+
+.summary-chip--active strong {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.summary-chip--attention {
+  border-color: rgba(166, 123, 91, 0.4);
+}
+
+/* The count lights up only when there is actually something to verify. */
+.summary-chip--alert {
+  background: var(--bb-warning-soft-bg);
+  border-color: rgba(166, 123, 91, 0.45);
+}
+
+.summary-chip--alert strong {
+  color: var(--bb-warning-soft-text);
+  background: rgba(212, 169, 106, 0.3);
+}
+
+.summary-chip--alert:hover {
+  background: rgba(212, 169, 106, 0.32);
+}
+
+.summary-chip:focus-visible {
+  outline: 2px solid var(--bb-coffee);
+  outline-offset: 2px;
+}
+
+/* ── Order cards ── */
 
 .order-card {
   margin: 0;
-  border: 1px solid var(--admin-border);
+  border: 1px solid var(--bb-border);
+  transition:
+    box-shadow var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+/* Cancelled orders read as inactive history, not an error. */
+.order-card--cancelled .order-head {
+  background: #f4efe7;
+}
+
+.order-card--cancelled .order-head .order-id strong {
+  color: var(--bb-text-muted);
+}
+
+.order-card:hover {
+  border-color: var(--bb-border-strong);
+  box-shadow: var(--bb-shadow-raised);
 }
 
 .order-head {
@@ -63,11 +117,11 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 16px;
-  padding: 14px 16px;
-  background: #faf6f1;
-  border-bottom: 1px solid var(--admin-border);
-  border-radius: 10px 10px 0 0;
+  gap: 10px var(--bb-space-4);
+  padding: var(--bb-space-4);
+  background: var(--bb-surface-sunken);
+  border-bottom: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card) var(--bb-radius-card) 0 0;
 }
 
 .order-id {
@@ -80,11 +134,12 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
 }
 
 .order-id strong {
   font-size: 15px;
+  color: var(--bb-espresso);
   word-break: break-all;
 }
 
@@ -96,18 +151,18 @@
 
 .order-date {
   font-size: 13px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
 }
 
 .order-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0 24px;
+  gap: 0 var(--bb-space-5);
 }
 
 .order-block {
-  padding: 14px 16px;
-  border-top: 1px solid #f2e9de;
+  padding: var(--bb-space-4);
+  border-top: 1px solid var(--bb-border);
 }
 
 .order-block h3 {
@@ -116,18 +171,18 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #6b4a35;
+  color: var(--bb-text-muted);
 }
 
 .order-block p {
   margin: 0 0 4px;
   font-size: 14px;
-  color: #3b2418;
+  color: var(--bb-text);
   word-break: break-word;
 }
 
 .muted {
-  color: #8a6b52 !important;
+  color: var(--bb-text-soft) !important;
   font-size: 13px !important;
 }
 
@@ -146,73 +201,147 @@
 .order-items th,
 .order-items td {
   padding: 8px 10px;
-  border-bottom: 1px solid #f2e9de;
+  border-bottom: 1px solid var(--bb-border);
   text-align: left;
   white-space: nowrap;
 }
 
 .order-items th {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b4a35;
+  letter-spacing: 0.8px;
+  color: var(--bb-text-muted);
+  background: var(--bb-surface-sunken);
 }
 
 .order-items td:first-child {
   white-space: normal;
+  color: var(--bb-text);
+}
+
+.item-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-thumb {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--bb-radius-sm);
+  object-fit: cover;
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
 }
 
 .order-items .num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .totals {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px 18px;
-  margin-top: 10px;
+  align-items: baseline;
+  gap: var(--bb-space-2) var(--bb-space-4);
+  margin-top: var(--bb-space-3);
   font-size: 14px;
-  color: #3b2418;
+  color: var(--bb-text);
+}
+
+.totals-total {
+  padding: 4px 14px;
+  border-radius: var(--bb-radius-pill);
+  background: rgba(59, 35, 20, 0.08);
+  font-weight: 700;
+  color: var(--bb-espresso);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── GCash verification panel ── */
+
+.verify-panel {
+  margin-top: var(--bb-space-3);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  border: 1px solid rgba(166, 123, 91, 0.35);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-warning-soft-bg);
+}
+
+.verify-head {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-2);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--bb-warning-soft-text);
+}
+
+.verify-head ion-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.verify-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--bb-space-2) var(--bb-space-4);
+  margin: var(--bb-space-3) 0 0;
+}
+
+.verify-details dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--bb-text-muted);
+}
+
+.verify-details dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+  word-break: break-word;
+}
+
+.verify-note {
+  margin: var(--bb-space-3) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bb-text-muted);
 }
 
 .status-line {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--bb-space-2);
 }
 
 .status-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--bb-space-2);
+  margin-top: var(--bb-space-2);
+}
+
+/* Cancelled orders are terminal history, not an actionable alert. */
+.cancelled-note {
+  font-style: italic;
 }
 
 @media (max-width: 700px) {
-  .filters {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .filter-search {
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .filter-select {
-    flex: 1 1 45%;
-    min-width: 130px;
-  }
-
   .order-head {
-    padding: 12px;
-    border-radius: 10px 10px 0 0;
+    padding: var(--bb-space-3);
   }
 
   .order-block {
-    padding: 12px;
+    padding: var(--bb-space-3);
   }
 
   .totals {

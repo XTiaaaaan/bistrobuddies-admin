@@ -1,38 +1,106 @@
 // BistroBuddies Coffee Palette
+//
+// Shared design tokens for the admin site: warm espresso/coffee/cream
+// palette, spacing, radii, shadows and motion. Component styles reference
+// these `--bb-*` variables instead of raw hex values.
 :root {
-  --ion-color-primary: #3B2418;
-  --ion-color-primary-rgb: 59, 36, 24;
+  --ion-color-primary: #3b2314;
+  --ion-color-primary-rgb: 59, 35, 20;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #331f15;
-  --ion-color-primary-tint: #4f3628;
+  --ion-color-primary-shade: #331e11;
+  --ion-color-primary-tint: #4e3626;
 
-  --ion-color-secondary: #A87C4F;
-  --ion-color-secondary-rgb: 168, 124, 79;
+  --ion-color-secondary: #a67b5b;
+  --ion-color-secondary-rgb: 166, 123, 91;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #946d44;
-  --ion-color-secondary-tint: #b48c5f;
+  --ion-color-secondary-shade: #926c50;
+  --ion-color-secondary-tint: #b28a6c;
 
-  --ion-color-tertiary: #D4A96A;
-  --ion-color-tertiary-rgb: 212, 169, 106;
-  --ion-color-tertiary-contrast: #3B2418;
-  --ion-color-tertiary-contrast-rgb: 59, 36, 24;
-  --ion-color-tertiary-shade: #ba955c;
-  --ion-color-tertiary-tint: #d9b379;
+  --ion-color-tertiary: #e6d5c0;
+  --ion-color-tertiary-rgb: 230, 213, 192;
+  --ion-color-tertiary-contrast: #3b2314;
+  --ion-color-tertiary-contrast-rgb: 59, 35, 20;
+  --ion-color-tertiary-shade: #cbbca9;
+  --ion-color-tertiary-tint: #e9dac8;
 
   --ion-color-success: #4a7c59;
   --ion-color-warning: #d4a96a;
   --ion-color-danger: #b33a3a;
+  --ion-color-medium: #8a6f5a;
+  --ion-color-light: #f5ebe0;
 
-  --ion-background-color: #F5EDE4;
-  --ion-background-color-rgb: 245, 237, 228;
-  --ion-text-color: #3B2418;
-  --ion-text-color-rgb: 59, 36, 24;
+  --ion-background-color: #f5ebe0;
+  --ion-background-color-rgb: 245, 235, 224;
+  --ion-text-color: #3b2314;
+  --ion-text-color-rgb: 59, 35, 20;
 
-  --ion-toolbar-background: #3B2418;
+  --ion-toolbar-background: #3b2314;
   --ion-toolbar-color: #ffffff;
 
   --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+
+  /* ── Core palette ── */
+  --bb-espresso: #3b2314;
+  --bb-coffee: #a67b5b;
+  --bb-caramel: var(--bb-coffee);
+  --bb-tan: #e6d5c0;
+  --bb-caramel-light: var(--bb-tan);
+  --bb-cream: #f5ebe0;
+
+  --bb-surface: #ffffff;
+  --bb-surface-sunken: #faf5ef;
+  --bb-border: #eadfd2;
+  --bb-border-strong: #dccbb4;
+
+  --bb-text: #3b2314;
+  --bb-text-muted: #8a6f5a;
+  --bb-text-soft: #a89280;
+
+  /* ── Semantic accents (badges, banners, icons) ── */
+  --bb-success: #4a7c59;
+  --bb-success-soft-bg: rgba(74, 124, 89, 0.14);
+  --bb-success-soft-text: #2f5c3e;
+  --bb-warning: #d4a96a;
+  --bb-warning-soft-bg: rgba(212, 169, 106, 0.22);
+  --bb-warning-soft-text: #7a5a2e;
+  --bb-danger: #b33a3a;
+  --bb-danger-soft-bg: rgba(179, 58, 58, 0.12);
+  --bb-danger-soft-text: #8c2f2f;
+  --bb-info: #5b7fa6;
+  --bb-info-soft-bg: rgba(91, 127, 166, 0.16);
+  --bb-info-soft-text: #33567e;
+  --bb-neutral-soft-bg: #f0e6da;
+  --bb-neutral-soft-text: #6f5a45;
+
+  /* ── Spacing scale (4 · 8 · 12 · 16 · 24 · 32) ── */
+  --bb-space-1: 4px;
+  --bb-space-2: 8px;
+  --bb-space-3: 12px;
+  --bb-space-4: 16px;
+  --bb-space-5: 24px;
+  --bb-space-6: 32px;
+
+  /* ── Radii (8 · 12 · 16) ── */
+  --bb-radius-sm: 8px;
+  --bb-radius-md: 12px;
+  --bb-radius-lg: 16px;
+  --bb-radius-card: var(--bb-radius-lg);
+  --bb-radius-pill: 999px;
+
+  /* ── Warm, subtle shadows ── */
+  --bb-shadow-card: 0 6px 18px rgba(59, 35, 20, 0.07);
+  --bb-shadow-raised: 0 12px 28px rgba(59, 35, 20, 0.14);
+
+  /* ── Motion (150–200ms, eased) ── */
+  --bb-motion-fast: 160ms;
+  --bb-motion-base: 200ms;
+  --bb-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* ── Admin site aliases (legacy names kept for existing styles) ── */
+  --admin-bg: var(--bb-cream);
+  --admin-surface: var(--bb-surface);
+  --admin-border: var(--bb-border);
 }
