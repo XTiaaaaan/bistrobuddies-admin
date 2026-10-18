@@ -172,9 +172,7 @@
         <section class="form-panel bb-rise">
           <h2>Image</h2>
           <p class="section-hint">
-            Choose a JPEG, PNG, or WebP image (max 5 MB). It is previewed here
-            and uploaded to the backend; only the returned image URL is saved
-            with the product.
+            Choose a JPEG, PNG, or WebP image (max 5 MB).
           </p>
 
           <div class="upload-zone">
@@ -190,8 +188,7 @@
 
           @if (editing() && !imageSelected() && imageUrl) {
             <p class="section-hint">
-              Keeping the current image — nothing is uploaded unless you choose
-              a replacement file.
+              This is the current image.
             </p>
           }
 
