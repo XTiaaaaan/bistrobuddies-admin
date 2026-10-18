@@ -33,7 +33,7 @@ document has `role: 'admin'`. Role checks are enforced in Firestore rules
 | File | Purpose |
 | --- | --- |
 | `src/environments/environment.ts` | Dev config: `apiBaseUrl: 'http://localhost:3001/api'`, Firebase web config |
-| `src/environments/environment.prod.ts` | Prod config: `apiBaseUrl: 'https://your-bistrobuddies-backend.example/api'` (**must be replaced before a production build**), Firebase web config |
+| `src/environments/environment.prod.ts` | Prod config: `apiBaseUrl: 'https://bistrobuddies-backend.onrender.com/api'`, Firebase web config |
 
 The Firebase values are the public Firebase web SDK config — safe to commit.
 No secrets belong in this repository.

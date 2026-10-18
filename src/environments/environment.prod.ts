@@ -5,11 +5,10 @@ export const environment = {
   /**
    * BistroBuddies backend API base URL (production).
    *
-   * IMPORTANT: replace this placeholder with the real deployed backend URL
-   * before deploying the admin website. It intentionally does NOT point at
+   * The deployed backend (Render). It intentionally does NOT point at
    * localhost — a production build must never rely on localhost.
    */
-  apiBaseUrl: 'https://your-bistrobuddies-backend.example/api',
+  apiBaseUrl: 'https://bistrobuddies-backend.onrender.com/api',
   firebase: {
     apiKey: 'AIzaSyBETNFotntAk4HHIjDiO0Hf3a0_fTK8xBo',
     authDomain: 'bistrobuddies-4f179.firebaseapp.com',

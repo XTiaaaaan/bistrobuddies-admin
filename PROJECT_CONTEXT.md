@@ -78,7 +78,7 @@ Base URL: `environment.apiBaseUrl`
 | Env file | Value |
 |---|---|
 | `src/environments/environment.ts:14` (dev) | `http://localhost:3001/api` |
-| `src/environments/environment.prod.ts:12` (prod) | `https://your-bistrobuddies-backend.example/api` — **⚠️ unresolved placeholder** |
+| `src/environments/environment.prod.ts:11` (prod) | `https://bistrobuddies-backend.onrender.com/api` |
 
 All requests attach `Authorization: Bearer <Firebase ID token>` (`admin-api.service.ts:71`).
 
