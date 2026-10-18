@@ -15,7 +15,12 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { alertCircle, receipt, refresh } from 'ionicons/icons';
+import {
+  alertCircle,
+  receipt,
+  refresh,
+  shieldCheckmarkOutline,
+} from 'ionicons/icons';
 import { formatDateTime, formatPhp, shortId } from '@shared/core/format/format';
 import {
   EMPTY_ORDER_FILTER,
@@ -31,6 +36,7 @@ import {
   allowedNextStatuses,
   canTransition,
   isCancelledOrder,
+  isOrderStatus,
   orderStatusColor,
   orderStatusLabel,
 } from '@shared/core/orders/order-status';
@@ -61,12 +67,16 @@ import {
   OrderStatus,
   PaymentDecision,
 } from '@shared/models/order.model';
+import { resolveProductImageSrc } from '@shared/core/products/product-image';
 import { OrdersService } from '@shared/services/orders.service';
 import { AdminApiError, AdminApiService } from '../../core/api/admin-api.service';
 
 /** Shown wherever a cancelled order would otherwise offer fulfilment actions. */
 const CANCELLED_ORDER_MESSAGE =
   'This order was cancelled by the customer and cannot be processed.';
+
+/** Summary chip keys on the orders page (presentation only). */
+type QuickFilter = 'all' | 'pending' | 'completed' | 'cancelled' | 'gcash';
 
 @Component({
   selector: 'admin-orders',
@@ -139,6 +149,24 @@ export class AdminOrdersPage implements OnInit {
     collectPaymentStatusOptions(this.orders())
   );
 
+  // -- Summary counts (read-only, derived from the live order list) ---------
+
+  readonly pendingCount = computed(
+    () => this.orders().filter((order) => order.orderStatus === 'PENDING').length
+  );
+  readonly completedCount = computed(
+    () =>
+      this.orders().filter((order) => order.orderStatus === 'COMPLETED').length
+  );
+  readonly cancelledCount = computed(
+    () =>
+      this.orders().filter((order) => order.orderStatus === 'CANCELLED').length
+  );
+  /** GCash payments waiting on an admin to verify the real transaction. */
+  readonly gcashToVerifyCount = computed(
+    () => this.orders().filter((order) => canConfirmPayment(order)).length
+  );
+
   private readonly reload$ = new BehaviorSubject<void>(undefined);
 
   private readonly ordersService = inject(OrdersService);
@@ -148,7 +176,7 @@ export class AdminOrdersPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    addIcons({ alertCircle, receipt, refresh });
+    addIcons({ alertCircle, receipt, refresh, shieldCheckmarkOutline });
   }
 
   ngOnInit(): void {
@@ -187,6 +215,60 @@ export class AdminOrdersPage implements OnInit {
 
   onSearch(value: string): void {
     this.search.set(value.trim());
+  }
+
+  // -- Summary quick filters ------------------------------------------------
+  //
+  // Presentation helpers only: each chip resets the existing filters and
+  // then sets the same signals the filter bar already uses. No data or
+  // workflow changes.
+
+  /** Applies the filter set behind a summary chip. */
+  applyQuickFilter(kind: QuickFilter): void {
+    this.clearFilters();
+    switch (kind) {
+      case 'pending':
+        this.statusFilter.set('PENDING');
+        break;
+      case 'completed':
+        this.statusFilter.set('COMPLETED');
+        break;
+      case 'cancelled':
+        this.statusFilter.set('CANCELLED');
+        break;
+      case 'gcash':
+        this.paymentMethodFilter.set('GCASH');
+        this.paymentStatusFilter.set('VERIFYING');
+        break;
+    }
+  }
+
+  /** Whether a summary chip currently matches the active filters. */
+  quickFilterActive(kind: QuickFilter): boolean {
+    const criteria = this.criteria();
+    const othersClear =
+      criteria.search.trim() === '' &&
+      criteria.paymentStatus === 'ALL' &&
+      criteria.paymentMethod === 'ALL' &&
+      criteria.dateRange === 'ALL';
+    switch (kind) {
+      case 'all':
+        return !hasActiveFilters(criteria);
+      case 'pending':
+        return othersClear && criteria.orderStatus === 'PENDING';
+      case 'completed':
+        return othersClear && criteria.orderStatus === 'COMPLETED';
+      case 'cancelled':
+        return othersClear && criteria.orderStatus === 'CANCELLED';
+      case 'gcash':
+        return (
+          criteria.search.trim() === '' &&
+          criteria.orderStatus === 'ALL' &&
+          criteria.paymentStatus === 'VERIFYING' &&
+          criteria.paymentMethod === 'GCASH' &&
+          criteria.dateRange === 'ALL'
+        );
+    }
   }
 
   /** Whether the customer cancelled this order (terminal, never processable). */
@@ -647,6 +729,40 @@ export class AdminOrdersPage implements OnInit {
   formatId = shortId;
   statusColor = orderStatusColor;
   statusLabel = orderStatusLabel;
+
+  /**
+   * Readable payment-status label. Historic gateway values (SUCCEEDED,
+   * CAPTURED…) read as "Paid"; anything unrecognised is shown verbatim so
+   * nothing is silently rewritten. Display-only.
+   */
+  paymentStatusLabel(status: unknown): string {
+    switch (String(status ?? '').toUpperCase()) {
+      case 'PENDING':
+        return 'Pending';
+      case 'VERIFYING':
+        return 'Awaiting verification';
+      case 'PAID':
+      case 'SUCCEEDED':
+      case 'CAPTURED':
+      case 'COMPLETED':
+        return 'Paid';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'FAILED':
+        return 'Failed';
+      case 'REFUNDED':
+        return 'Refunded';
+      case 'CANCELLED':
+        return 'Cancelled';
+      default:
+        return String(status ?? '').trim() || 'Unknown';
+    }
+  }
+
+  /** `<img src>` for an order item thumbnail (Cloudinary or legacy paths). */
+  itemImageSrc(imageUrl: string | null | undefined): string {
+    return resolveProductImageSrc(imageUrl);
+  }
 
   paymentStatusColor(status: unknown): string {
     switch (String(status ?? '').toUpperCase()) {

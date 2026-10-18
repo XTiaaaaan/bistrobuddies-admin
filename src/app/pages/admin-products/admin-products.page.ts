@@ -153,10 +153,38 @@ export class AdminProductsPage implements OnInit {
     )} · Large ${formatPhp(product.largePrice)}`;
   }
 
+  /**
+   * Compact per-size price chips rendered beside the canonical price when a
+   * product carries tiered pricing (presentation only).
+   */
+  sizePriceChips(
+    product: Product
+  ): { label: string; price: string }[] | null {
+    if (!hasLegacyTierPrices(product)) {
+      return null;
+    }
+    return [
+      { label: 'Small', price: formatPhp(product.smallPrice) },
+      { label: 'Medium', price: formatPhp(product.mediumPrice) },
+      { label: 'Large', price: formatPhp(product.largePrice) },
+    ];
+  }
+
   async toggleAvailability(product: Product, checked: boolean): Promise<void> {
+    if (this.busyId() !== null) {
+      return;
+    }
     this.busyId.set(product.id);
     try {
       await this.adminApi.updateProduct(product.id, { available: checked });
+      const toast = await this.toastCtrl.create({
+        message: checked
+          ? `"${product.name}" is now available.`
+          : `"${product.name}" is now unavailable.`,
+        duration: 2500,
+        color: 'success',
+      });
+      await toast.present();
     } catch {
       product.available = !checked;
       await this.showError('Could not update availability. Please try again.');
@@ -184,9 +212,18 @@ export class AdminProductsPage implements OnInit {
   }
 
   private async deleteProduct(product: Product): Promise<void> {
+    if (this.busyId() !== null) {
+      return;
+    }
     this.busyId.set(product.id);
     try {
       await this.adminApi.deleteProduct(product.id);
+      const toast = await this.toastCtrl.create({
+        message: `"${product.name}" was deleted from the menu.`,
+        duration: 2500,
+        color: 'success',
+      });
+      await toast.present();
     } catch {
       await this.showError('Could not delete the product. Please try again.');
     } finally {

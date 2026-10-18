@@ -103,8 +103,10 @@
           </thead>
           <tbody>
             @for (message of messages(); track message.id) {
-              <tr>
-                <td class="sender-cell">{{ message.name }}</td>
+              <tr [class.is-new]="message.status === 'NEW'">
+                <td class="sender-cell">
+                  <span class="sender-name">{{ message.name }}</span>
+                </td>
                 <td class="email-cell">{{ message.email }}</td>
                 <td class="subject-cell">{{ message.subject }}</td>
                 <td
@@ -123,10 +125,20 @@
                   <ion-button
                     size="small"
                     fill="outline"
+                    color="secondary"
                     [attr.aria-label]="'View message from ' + message.name"
                     (click)="openMessage(message)"
                   >
                     View
+                  </ion-button>
+                  <ion-button
+                    size="small"
+                    fill="solid"
+                    [attr.aria-label]="'Reply to message from ' + message.name"
+                    (click)="openReply(message)"
+                  >
+                    <ion-icon slot="start" name="chatbubble-ellipses"></ion-icon>
+                    Reply
                   </ion-button>
                 </td>
               </tr>
@@ -206,6 +218,70 @@
             <section class="detail-block">
               <h3>Message</h3>
               <p class="detail-message">{{ message.message }}</p>
+            </section>
+
+            <section class="detail-block">
+              <h3>Replies</h3>
+              @if (message.replies.length > 0) {
+                <div class="reply-thread">
+                  @for (reply of message.replies; track reply.id) {
+                    <div class="reply-entry">
+                      <div class="reply-meta">
+                        <span class="reply-sender">Admin</span>
+                        <span class="reply-date">
+                          {{ formatDate(reply.createdAt) }}
+                        </span>
+                      </div>
+                      <p class="reply-text">{{ reply.reply }}</p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="muted">No replies yet — you can send one below.</p>
+              }
+
+              <div class="reply-composer">
+                <ion-textarea
+                  aria-label="Reply text"
+                  placeholder="Write a reply to the customer..."
+                  [value]="replyDraft()"
+                  [maxlength]="replyMax"
+                  [autoGrow]="true"
+                  rows="4"
+                  [disabled]="sendingReply()"
+                  (ionInput)="onReplyInput($event)"
+                ></ion-textarea>
+                <div class="composer-foot">
+                  <span class="reply-counter">
+                    {{ replyCharacters() }} / {{ replyMax }}
+                  </span>
+                  <div class="composer-actions">
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      [disabled]="sendingReply()"
+                      (click)="cancelReply()"
+                    >
+                      Cancel
+                    </ion-button>
+                    <ion-button
+                      size="small"
+                      [disabled]="sendingReply() || replyCharacters() === 0"
+                      (click)="sendReply()"
+                    >
+                      @if (sendingReply()) {
+                        <ion-spinner slot="start" name="crescent"></ion-spinner>
+                      } @else {
+                        <ion-icon slot="start" name="send"></ion-icon>
+                      }
+                      Send Reply
+                    </ion-button>
+                  </div>
+                </div>
+                @if (replyError()) {
+                  <p class="reply-error" role="alert">{{ replyError() }}</p>
+                }
+              </div>
             </section>
 
             <section class="detail-block">

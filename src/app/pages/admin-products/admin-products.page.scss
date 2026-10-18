@@ -1,7 +1,19 @@
 .product-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--bb-space-4);
+}
+
+.results-count {
+  margin: 0 0 var(--bb-space-3);
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+
+.product-card {
+  transition:
+    box-shadow var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease);
 }
 
 .product-card:hover {
@@ -11,8 +23,8 @@
 
 .product-body {
   display: flex;
-  gap: 18px;
-  padding: 18px;
+  gap: var(--bb-space-4);
+  padding: var(--bb-space-4);
   align-items: flex-start;
   flex-wrap: wrap;
 }
@@ -20,7 +32,7 @@
 .product-media {
   width: 92px;
   height: 92px;
-  border-radius: var(--bb-radius-sm);
+  border-radius: var(--bb-radius-md);
   overflow: hidden;
   background: var(--bb-surface-sunken);
   border: 1px solid var(--bb-border);
@@ -34,7 +46,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: transform var(--bb-motion-base) var(--bb-ease);
+  transition: transform var(--bb-motion-fast) var(--bb-ease);
 }
 
 .product-card:hover .product-media img {
@@ -43,7 +55,7 @@
 
 .product-media ion-icon {
   font-size: 34px;
-  color: var(--bb-caramel);
+  color: var(--bb-coffee);
 }
 
 .product-info {
@@ -54,7 +66,7 @@
 .product-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--bb-space-3);
   flex-wrap: wrap;
 }
 
@@ -73,7 +85,8 @@
 
 .price-row {
   display: flex;
-  gap: 6px 14px;
+  align-items: center;
+  gap: var(--bb-space-2) var(--bb-space-3);
   flex-wrap: wrap;
   font-size: 14px;
   font-weight: 600;
@@ -85,16 +98,28 @@
   font-variant-numeric: tabular-nums;
 }
 
-.price-tiers {
-  font-weight: 400;
-  font-size: 13px;
+.price-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.price-chip {
+  padding: 2px 10px;
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--bb-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .product-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--bb-space-3);
   align-items: flex-end;
   margin-left: auto;
 }
@@ -105,14 +130,22 @@
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: var(--bb-space-2);
   flex-wrap: wrap;
+}
+
+/* Delete stays quiet until touched — a soft red, not an alert. */
+.action-buttons ion-button[color='danger'] {
+  --background: var(--bb-danger-soft-bg);
+  --background-hover: rgba(179, 58, 58, 0.18);
+  --border-color: rgba(179, 58, 58, 0.3);
+  --color: var(--bb-danger-soft-text);
 }
 
 @media (max-width: 720px) {
   .product-body {
-    padding: 14px;
-    gap: 12px;
+    padding: var(--bb-space-3);
+    gap: var(--bb-space-3);
   }
 
   .product-media {
@@ -136,6 +169,6 @@
   .price-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: var(--bb-space-1);
   }
 }

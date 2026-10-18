@@ -60,6 +60,7 @@ function message(overrides: Partial<ContactMessage> = {}): ContactMessage {
     status: 'NEW',
     createdAt: '2026-10-09T12:00:00.000Z',
     updatedAt: '2026-10-09T12:00:00.000Z',
+    replies: [],
     ...overrides,
   };
 }
@@ -464,5 +465,182 @@ describe('AdminMessagesPage', () => {
     expect(toastCreate).toHaveBeenCalledWith(
       expect.objectContaining({ color: 'danger' })
     );
+  });
+
+  describe('replying to a message', () => {
+    const replyUrl = (id: string) => `${listUrl}/${id}/replies`;
+
+    function replyResponse(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'msg-1',
+        status: 'READ',
+        reply: {
+          id: 'reply-1',
+          senderRole: 'ADMIN',
+          reply: 'We shipped it today.',
+          createdAt: '2026-10-09T13:00:00.000Z',
+          ...overrides,
+        },
+      };
+    }
+
+    it('opens the reply composer with a clean draft', async () => {
+      await loadFirstPage(pageResponse([message()]));
+
+      page.openReply(page.messages()[0]);
+      expect(page.selected()?.id).toBe('msg-1');
+      expect(page.replyDraft()).toBe('');
+      expect(page.replyError()).toBe('');
+      expect(page.sendingReply()).toBe(false);
+
+      page.closeDetail();
+      expect(page.selected()).toBeNull();
+      expect(page.replyDraft()).toBe('');
+    });
+
+    it('sends the reply and applies the backend-confirmed result', async () => {
+      await loadFirstPage(pageResponse([message()]));
+
+      const target = page.messages()[0];
+      page.openReply(target);
+      page.replyDraft.set('We shipped it today.');
+      const sending = page.sendReply();
+
+      // Nothing optimistic: the list keeps NEW with no replies until the
+      // backend confirms.
+      await tick();
+      expect(page.messages()[0].status).toBe('NEW');
+      expect(page.messages()[0].replies).toEqual([]);
+      expect(page.sendingReply()).toBe(true);
+
+      const request = await waitForRequest(
+        httpMock,
+        replyUrl('msg-1'),
+        'POST'
+      );
+      expect(request.request.body).toEqual({ reply: 'We shipped it today.' });
+      expect(request.request.headers.get('Authorization')).toBe(
+        'Bearer test-id-token'
+      );
+      request.flush(replyResponse());
+      await sending;
+
+      expect(page.sendingReply()).toBe(false);
+      expect(page.messages()[0].status).toBe('READ');
+      expect(page.messages()[0].replies).toEqual([
+        replyResponse().reply,
+      ]);
+      expect(page.selected()?.status).toBe('READ');
+      expect(page.selected()?.replies).toEqual([replyResponse().reply]);
+      expect(page.replyDraft()).toBe('');
+      expect(page.replyError()).toBe('');
+      expect(toastCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'success' })
+      );
+    });
+
+    it('preserves the draft and shows the error when sending fails', async () => {
+      await loadFirstPage(pageResponse([message()]));
+
+      page.openReply(page.messages()[0]);
+      page.replyDraft.set('We shipped it today.');
+      const sending = page.sendReply();
+
+      const request = await waitForRequest(
+        httpMock,
+        replyUrl('msg-1'),
+        'POST'
+      );
+      request.flush(
+        { error: { code: 'server_error', message: 'Boom.' } },
+        { status: 500, statusText: 'Server Error' }
+      );
+      await sending;
+
+      // Failure never fakes a sent reply and never clears the draft.
+      expect(page.messages()[0].replies).toEqual([]);
+      expect(page.messages()[0].status).toBe('NEW');
+      expect(page.replyDraft()).toBe('We shipped it today.');
+      expect(page.replyError()).toBe('Boom.');
+      expect(
+        toastCreate.mock.calls.some(
+          ([options]) => (options as { color?: string }).color === 'success'
+        )
+      ).toBe(false);
+    });
+
+    it('rejects an empty or whitespace-only draft without an API call', async () => {
+      await loadFirstPage(pageResponse([message()]));
+      page.openReply(page.messages()[0]);
+
+      await page.sendReply();
+      expect(page.replyError()).toContain('required');
+
+      page.replyDraft.set('   ');
+      await page.sendReply();
+      expect(page.replyError()).toContain('required');
+
+      await tick();
+      httpMock.expectNone(
+        (req) => req.method === 'POST' && req.url === replyUrl('msg-1')
+      );
+    });
+
+    it('rejects an overly long draft without an API call', async () => {
+      await loadFirstPage(pageResponse([message()]));
+      page.openReply(page.messages()[0]);
+
+      page.replyDraft.set('r'.repeat(5001));
+      await page.sendReply();
+
+      expect(page.replyError()).toContain('5000');
+      httpMock.expectNone(
+        (req) => req.method === 'POST' && req.url === replyUrl('msg-1')
+      );
+    });
+
+    it('prevents duplicate submissions while a reply is in flight', async () => {
+      await loadFirstPage(pageResponse([message()]));
+
+      const target = page.messages()[0];
+      page.openReply(target);
+      page.replyDraft.set('First reply.');
+      const first = page.sendReply();
+      const second = page.sendReply();
+
+      const request = await waitForRequest(
+        httpMock,
+        replyUrl('msg-1'),
+        'POST'
+      );
+      request.flush(replyResponse());
+      await Promise.all([first, second]);
+
+      // Only the first reply reached the backend.
+      httpMock.expectNone(
+        (req) => req.method === 'POST' && req.url === replyUrl('msg-1')
+      );
+      expect(page.messages()[0].replies).toHaveLength(1);
+    });
+
+    it('shows stored replies for the selected message', async () => {
+      const replied = message({
+        status: 'READ',
+        updatedAt: '2026-10-09T13:00:00.000Z',
+        replies: [
+          {
+            id: 'reply-1',
+            senderRole: 'ADMIN',
+            reply: 'We shipped it today.',
+            createdAt: '2026-10-09T13:00:00.000Z',
+          },
+        ],
+      });
+      await loadFirstPage(pageResponse([replied]));
+
+      page.openReply(page.messages()[0]);
+
+      expect(page.selected()?.replies).toHaveLength(1);
+    });
   });
 });

@@ -10,23 +10,35 @@ import {
   IonSelect,
   IonSelectOption,
   IonSpinner,
+  IonTextarea,
   IonTitle,
   IonToolbar,
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { alertCircle, close, mail, refresh } from 'ionicons/icons';
+import {
+  alertCircle,
+  chatbubbleEllipses,
+  checkmarkCircle,
+  close,
+  mail,
+  refresh,
+  send,
+} from 'ionicons/icons';
 import { formatDateTime } from '@shared/core/format/format';
 import {
   ContactMessage,
+  ContactMessageReplyResponse,
   ContactMessageStatusUpdate,
 } from '@shared/models/contact-message.model';
 import {
   CONTACT_MESSAGE_STATUS_OPTIONS,
+  CONTACT_REPLY_MAX,
   ContactMessageStatusFilter,
   allowedStatusUpdates,
   contactMessageStatusColor,
   contactMessageStatusLabel,
+  contactReplyError,
   messagePreview,
 } from '../../core/messages/contact-message-status';
 import { AdminApiError, AdminApiService } from '../../core/api/admin-api.service';
@@ -50,6 +62,7 @@ const PAGE_SIZE = 25;
     IonSelect,
     IonSelectOption,
     IonSpinner,
+    IonTextarea,
     IonTitle,
     IonToolbar,
   ],
@@ -71,6 +84,14 @@ export class AdminMessagesPage implements OnInit {
   readonly busyId = signal<string | null>(null);
   readonly selected = signal<ContactMessage | null>(null);
 
+  readonly replyMax = CONTACT_REPLY_MAX;
+  readonly replyDraft = signal('');
+  readonly replyError = signal('');
+  readonly sendingReply = signal(false);
+  readonly replyCharacters = computed(
+    () => this.replyDraft().trim().length
+  );
+
   readonly canGoPrevious = computed(
     () => this.loadStatus() === 'ready' && this.page() > 1
   );
@@ -89,7 +110,15 @@ export class AdminMessagesPage implements OnInit {
   private readonly toastCtrl = inject(ToastController);
 
   constructor() {
-    addIcons({ alertCircle, close, mail, refresh });
+    addIcons({
+      alertCircle,
+      chatbubbleEllipses,
+      checkmarkCircle,
+      close,
+      mail,
+      refresh,
+      send,
+    });
   }
 
   ngOnInit(): void {
@@ -169,8 +198,104 @@ export class AdminMessagesPage implements OnInit {
     this.selected.set(message);
   }
 
+  /** Opens the detail panel with a fresh reply composer for this message. */
+  openReply(message: ContactMessage): void {
+    this.replyDraft.set('');
+    this.replyError.set('');
+    this.selected.set(message);
+  }
+
   closeDetail(): void {
     this.selected.set(null);
+    this.replyDraft.set('');
+    this.replyError.set('');
+  }
+
+  cancelReply(): void {
+    this.replyDraft.set('');
+    this.replyError.set('');
+  }
+
+  /** Syncs the draft from the textarea and clears a resolved error. */
+  onReplyInput(event: CustomEvent): void {
+    const value = (event.detail as { value?: unknown })?.value ?? '';
+    this.replyDraft.set(typeof value === 'string' ? value : '');
+    if (this.replyError() && contactReplyError(this.replyDraft()) === null) {
+      this.replyError.set('');
+    }
+  }
+
+  /**
+   * Sends the draft to the backend's reply endpoint. The composer only
+   * reflects state the backend confirmed: on success the stored reply is
+   * applied and the draft cleared; on failure the draft and any typed text
+   * are preserved and the error is shown inline. A request in flight
+   * blocks any duplicate submission.
+   */
+  async sendReply(): Promise<void> {
+    const message = this.selected();
+    if (!message || this.sendingReply()) {
+      return;
+    }
+
+    const draft = this.replyDraft().trim();
+    const issue = contactReplyError(draft);
+    if (issue !== null) {
+      this.replyError.set(issue);
+      return;
+    }
+
+    this.sendingReply.set(true);
+    this.replyError.set('');
+    try {
+      const result = await this.adminApi.replyToContactMessage(
+        message.id,
+        draft
+      );
+      this.applyConfirmedReply(result);
+      this.replyDraft.set('');
+      const toast = await this.toastCtrl.create({
+        message: 'Reply sent to the customer.',
+        duration: 2500,
+        color: 'success',
+      });
+      await toast.present();
+    } catch (error) {
+      // The draft survives a failed request so the admin can retry.
+      this.replyError.set(this.describeError(error, 'reply'));
+    } finally {
+      this.sendingReply.set(false);
+    }
+  }
+
+  /**
+   * Applies the backend-confirmed reply (and post-reply status) to the list
+   * and the open detail panel. The reply comes from the server response —
+   * nothing is invented locally.
+   */
+  private applyConfirmedReply(result: ContactMessageReplyResponse): void {
+    const confirmedAt = result.reply.createdAt;
+    this.messages.update((list) =>
+      list.map((message) =>
+        message.id === result.id
+          ? {
+              ...message,
+              status: result.status,
+              updatedAt: confirmedAt ?? message.updatedAt,
+              replies: [...message.replies, result.reply],
+            }
+          : message
+      )
+    );
+    const current = this.selected();
+    if (current?.id === result.id) {
+      this.selected.set({
+        ...current,
+        status: result.status,
+        updatedAt: confirmedAt ?? current.updatedAt,
+        replies: [...current.replies, result.reply],
+      });
+    }
   }
 
   isBusy(message: ContactMessage): boolean {
@@ -244,14 +369,14 @@ export class AdminMessagesPage implements OnInit {
    */
   private describeError(
     error: unknown,
-    context: 'list' | 'refresh' | 'update'
+    context: 'list' | 'refresh' | 'update' | 'reply'
   ): string {
     if (error instanceof AdminApiError) {
       if (error.status === 401) {
         return 'Your administrator session could not be verified. Please sign in again.';
       }
       if (error.status === 403) {
-        return 'Access denied — administrator access is required to view customer messages.';
+        return 'Access denied — administrator access is required to manage customer messages.';
       }
       if (error.status === 429) {
         return 'Too many requests. Please wait a moment and try again.';
@@ -261,6 +386,8 @@ export class AdminMessagesPage implements OnInit {
     switch (context) {
       case 'update':
         return 'Could not update the message status. Please try again.';
+      case 'reply':
+        return 'Could not send the reply. Please try again — your draft is kept.';
       case 'refresh':
         return 'Could not refresh the messages. Please try again.';
       default:

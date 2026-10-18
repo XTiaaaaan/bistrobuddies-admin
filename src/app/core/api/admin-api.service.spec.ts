@@ -425,6 +425,76 @@ describe('AdminApiService', () => {
     );
   });
 
+  it('sends a reply through the replies endpoint', async () => {
+    const promise = api.replyToContactMessage('msg-1', 'We shipped it today.');
+    await tick();
+
+    const request = httpMock.expectOne(
+      `${environment.apiBaseUrl}/admin/contact-messages/msg-1/replies`
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ reply: 'We shipped it today.' });
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer test-id-token'
+    );
+
+    request.flush({
+      id: 'msg-1',
+      status: 'READ',
+      reply: {
+        id: 'reply-1',
+        senderRole: 'ADMIN',
+        reply: 'We shipped it today.',
+        createdAt: '2026-10-09T13:00:00.000Z',
+      },
+    });
+    await expect(promise).resolves.toEqual({
+      id: 'msg-1',
+      status: 'READ',
+      reply: {
+        id: 'reply-1',
+        senderRole: 'ADMIN',
+        reply: 'We shipped it today.',
+        createdAt: '2026-10-09T13:00:00.000Z',
+      },
+    });
+  });
+
+  it('encodes the message id in the replies endpoint path', async () => {
+    const promise = api.replyToContactMessage('msg / 1', 'Hi!');
+    await tick();
+
+    const request = httpMock.expectOne(
+      (req) =>
+        req.method === 'POST' &&
+        req.url ===
+          `${environment.apiBaseUrl}/admin/contact-messages/msg%20%2F%201/replies`
+    );
+    request.flush({
+      id: 'msg / 1',
+      status: 'READ',
+      reply: {
+        id: 'reply-1',
+        senderRole: 'ADMIN',
+        reply: 'Hi!',
+        createdAt: '2026-10-09T13:00:00.000Z',
+      },
+    });
+    await promise;
+  });
+
+  it('does not send a contact message reply when nobody is signed in', async () => {
+    getIdToken.mockResolvedValue(null);
+
+    await expect(api.replyToContactMessage('msg-1', 'Hi!')).rejects.toMatchObject(
+      { name: 'AdminApiError', status: 401 }
+    );
+    await tick();
+    httpMock.expectNone(
+      (req) => req.url.includes('/admin/contact-messages/') && req.method === 'POST'
+    );
+  });
+
   it('confirms a GCash payment through the payment endpoint', async () => {
     const promise = api.decideOrderPayment('order-1', 'PAID');
     await tick();

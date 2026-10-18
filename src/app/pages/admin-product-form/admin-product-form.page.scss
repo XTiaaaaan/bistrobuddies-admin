@@ -1,5 +1,5 @@
 .product-form {
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .form-panel {
@@ -7,15 +7,14 @@
   border: 1px solid var(--admin-border);
   border-radius: var(--bb-radius-card);
   box-shadow: var(--bb-shadow-card);
-  padding: 18px 20px;
-  margin-bottom: 18px;
+  padding: var(--bb-space-5);
+  margin-bottom: var(--bb-space-4);
   box-sizing: border-box;
 }
 
 .form-panel h2 {
-  margin: 0 0 4px;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 18px;
+  margin: 0 0 var(--bb-space-1);
+  font-size: 19px;
   font-weight: 600;
   color: var(--bb-espresso);
 }
@@ -23,27 +22,34 @@
 .form-list {
   background: transparent;
   padding: 0;
-  margin: 10px 0 0;
+  margin: var(--bb-space-3) 0 0;
 }
 
 .form-list ion-item {
   --background: var(--bb-surface-sunken);
   --background-hover: var(--bb-surface-sunken);
-  --border-radius: var(--bb-radius-sm);
+  --border-radius: var(--bb-radius-md);
   --min-height: 58px;
-  margin-bottom: 10px;
-  transition: box-shadow var(--bb-motion-base) var(--bb-ease);
+  margin-bottom: var(--bb-space-3);
+  transition: box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
 .form-list ion-item:focus-within {
-  box-shadow: 0 0 0 3px rgba(168, 124, 79, 0.18);
+  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
 }
 
-/* Size prices sit side by side when there is room. */
+.form-list ion-textarea {
+  --placeholder-color: var(--bb-text-soft);
+  --color: var(--bb-text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Size prices sit side by side when there is room, stack on mobile. */
 .price-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--bb-space-3);
 }
 
 .price-list ion-item {
@@ -51,17 +57,31 @@
 }
 
 .section-hint {
-  margin: 8px 0 0;
+  margin: var(--bb-space-2) 0 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--bb-text-muted);
 }
 
+/* ── Image upload ── */
+
+.upload-zone {
+  margin-top: var(--bb-space-3);
+  padding: var(--bb-space-4);
+  max-width: 480px;
+  border: 1.5px dashed var(--bb-border-strong);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface-sunken);
+  transition: border-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.upload-zone:focus-within {
+  border-color: var(--bb-coffee);
+}
+
 .image-file-input {
   display: block;
   width: 100%;
-  max-width: 440px;
-  margin-top: 10px;
   font: inherit;
   font-size: 14px;
   color: var(--bb-espresso);
@@ -78,14 +98,14 @@
   font-weight: 600;
   cursor: pointer;
   transition:
-    background-color var(--bb-motion-base) var(--bb-ease),
-    border-color var(--bb-motion-base) var(--bb-ease),
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
     transform var(--bb-motion-fast) var(--bb-ease);
 }
 
 .image-file-input::file-selector-button:hover {
-  background: #4f3628;
-  border-color: #4f3628;
+  background: #4e3626;
+  border-color: #4e3626;
 }
 
 .image-file-input::file-selector-button:active {
@@ -93,14 +113,15 @@
 }
 
 .image-preview {
-  margin-top: 14px;
+  margin-top: var(--bb-space-4);
   width: 100%;
   max-width: 280px;
   aspect-ratio: 4 / 3;
-  border: 1px solid var(--admin-border);
-  border-radius: var(--bb-radius-sm);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
   overflow: hidden;
   background: var(--bb-surface-sunken);
+  box-shadow: var(--bb-shadow-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -116,8 +137,8 @@
 .section-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: var(--bb-space-2);
+  margin: var(--bb-space-3) 0 0;
   font-size: 13px;
   color: var(--bb-text-muted);
 }
@@ -125,22 +146,22 @@
 .section-status ion-spinner {
   width: 18px;
   height: 18px;
-  color: var(--bb-caramel);
+  color: var(--bb-coffee);
 }
 
 .admin-notice {
-  margin: 12px 0 0;
+  margin: var(--bb-space-3) 0 0;
 }
 
 .sugar-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--bb-space-2);
+  margin-top: var(--bb-space-3);
 }
 
 .sugar-chips ion-button {
-  --border-radius: 999px;
+  --border-radius: var(--bb-radius-pill);
   --border-color: var(--bb-border-strong);
   --color: var(--bb-text-muted);
   height: 36px;
@@ -150,7 +171,7 @@
 
 .sugar-chips ion-button[color='primary'] {
   --background: var(--bb-espresso);
-  --background-hover: #4f3628;
+  --background-hover: #4e3626;
   --border-color: var(--bb-espresso);
   --color: #ffffff;
 }
@@ -163,15 +184,15 @@
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--bb-space-3);
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: var(--bb-space-1);
 }
 
 .form-actions ion-button {
   --background: var(--bb-espresso);
-  --background-hover: #4f3628;
-  --border-radius: var(--bb-radius-sm);
+  --background-hover: #4e3626;
+  --border-radius: var(--bb-radius-md);
   height: 44px;
   font-weight: 600;
 }
@@ -185,7 +206,11 @@
 
 @media (max-width: 600px) {
   .form-panel {
-    padding: 14px;
+    padding: var(--bb-space-4);
+  }
+
+  .price-list {
+    grid-template-columns: 1fr;
   }
 
   .form-actions {

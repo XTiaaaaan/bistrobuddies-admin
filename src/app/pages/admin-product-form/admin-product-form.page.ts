@@ -11,6 +11,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonSpinner,
+  IonTextarea,
   IonToggle,
   ToastController,
 } from '@ionic/angular';
@@ -74,6 +75,7 @@ function uploadFailureMessage(error: unknown): string {
     IonSelect,
     IonSelectOption,
     IonSpinner,
+    IonTextarea,
     IonToggle,
   ],
 })

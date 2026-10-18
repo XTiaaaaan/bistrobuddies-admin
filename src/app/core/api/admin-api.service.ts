@@ -6,6 +6,7 @@ import { ProductInput } from '@shared/models/product.model';
 import { OrderRefundRequest, OrderStatus, PaymentDecision } from '@shared/models/order.model';
 import {
   ContactMessageListResponse,
+  ContactMessageReplyResponse,
   ContactMessageStatus,
   ContactMessageStatusUpdate,
   ContactMessageStatusUpdateResponse,
@@ -215,6 +216,27 @@ export class AdminApiService {
       'PATCH',
       `/admin/contact-messages/${encodeURIComponent(messageId)}/status`,
       { status }
+    );
+  }
+
+  /**
+   * Sends an administrator's reply to a customer message through the
+   * backend's authorized endpoint (`POST
+   * /api/admin/contact-messages/:id/replies`, admin only).
+   *
+   * Only the reply text is sent — the sender role and timestamp are decided
+   * server-side. The response returns the backend-confirmed reply plus the
+   * message's post-reply status (a NEW message becomes READ); nothing here
+   * ever fakes a stored reply.
+   */
+  async replyToContactMessage(
+    messageId: string,
+    reply: string
+  ): Promise<ContactMessageReplyResponse> {
+    return this.request<ContactMessageReplyResponse>(
+      'POST',
+      `/admin/contact-messages/${encodeURIComponent(messageId)}/replies`,
+      { reply }
     );
   }
 

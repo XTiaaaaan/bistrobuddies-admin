@@ -13,6 +13,19 @@ export type ContactMessageStatus = 'NEW' | 'READ' | 'RESOLVED';
  */
 export type ContactMessageStatusUpdate = Exclude<ContactMessageStatus, 'NEW'>;
 
+/**
+ * A reply stored on a contact message, as returned by the backend
+ * (`{ id, senderRole, reply, createdAt }` — sender role and timestamp are
+ * decided by the backend; only the Admin SDK writes replies).
+ */
+export interface ContactMessageReply {
+  id: string;
+  senderRole: 'ADMIN' | 'CUSTOMER';
+  reply: string;
+  /** ISO-8601 string from the backend serializer, or null when missing. */
+  createdAt: string | null;
+}
+
 export interface ContactMessage {
   id: string;
   name: string;
@@ -23,6 +36,8 @@ export interface ContactMessage {
   /** ISO-8601 string from the backend serializer, or null when missing. */
   createdAt: string | null;
   updatedAt: string | null;
+  /** Stored admin replies, oldest first (empty until one was sent). */
+  replies: ContactMessageReply[];
 }
 
 /** Paginated list response, newest messages first. */
@@ -37,4 +52,12 @@ export interface ContactMessageListResponse {
 export interface ContactMessageStatusUpdateResponse {
   id: string;
   status: ContactMessageStatusUpdate;
+}
+
+/** Response of `POST /api/admin/contact-messages/:id/replies`. */
+export interface ContactMessageReplyResponse {
+  id: string;
+  /** Workflow status of the message after the reply was stored. */
+  status: ContactMessageStatus;
+  reply: ContactMessageReply;
 }

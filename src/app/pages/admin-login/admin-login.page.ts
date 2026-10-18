@@ -43,6 +43,9 @@ export class AdminLoginPage implements OnInit {
   }
 
   async signIn(): Promise<void> {
+    if (this.loading()) {
+      return;
+    }
     if (!this.credentialsValid()) {
       return;
     }

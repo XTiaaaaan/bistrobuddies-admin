@@ -1,27 +1,144 @@
+/* ── Section layout ── */
+
+.stat-section {
+  margin-bottom: var(--bb-space-5);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bb-space-3);
+  margin-bottom: var(--bb-space-3);
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.section-meta {
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+
+/* "Updates live" reads as a quiet pill with a soft green pulse dot. */
+.section-meta--live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-success-soft-bg);
+  color: var(--bb-success-soft-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.section-meta--live::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--bb-success);
+}
+
+.section-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-3);
+  padding: 22px var(--bb-space-4);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+  font-size: 14px;
+  color: var(--bb-text-muted);
+}
+
+.section-loading ion-spinner {
+  width: 20px;
+  height: 20px;
+  color: var(--bb-coffee);
+}
+
+.section-note {
+  margin: -8px 0 var(--bb-space-4);
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+
+/* ── Needs-attention panel ── */
+
+.attention-panel {
+  margin-bottom: var(--bb-space-2);
+  padding: var(--bb-space-4);
+  background: var(--bb-warning-soft-bg);
+  border: 1px solid rgba(166, 123, 91, 0.32);
+  border-radius: var(--bb-radius-card);
+}
+
+.attention-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-2);
+  margin: 0 0 var(--bb-space-2);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bb-warning-soft-text);
+}
+
+.attention-panel h3 ion-icon {
+  font-size: 18px;
+}
+
+.attention-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bb-text);
+}
+
+.attention-panel a {
+  color: var(--bb-espresso);
+  font-weight: 700;
+}
+
+/* ── Stat grid and cards ── */
+
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--bb-space-4);
+  margin-bottom: var(--bb-space-5);
 }
 
 .stat-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  padding: var(--bb-space-4) var(--bb-space-3);
   text-align: center;
-  padding: 8px 12px 12px;
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: var(--bb-border-strong);
-  margin-bottom: 4px;
+  background: var(--bb-tan);
+  margin-bottom: var(--bb-space-1);
 }
 
 .stat-icon ion-icon {
@@ -30,13 +147,14 @@
 }
 
 .stat-card ion-card-header {
-  padding: 4px 0 2px;
+  padding: var(--bb-space-1) 0 2px;
 }
 
 .stat-card ion-card-title {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 38px;
   font-weight: 600;
+  line-height: 1.1;
   color: var(--bb-espresso);
 }
 
@@ -49,52 +167,66 @@
 }
 
 .stat-available .stat-icon {
-  background: rgba(74, 124, 89, 0.16);
+  background: var(--bb-success-soft-bg);
 }
 
 .stat-available .stat-icon ion-icon {
-  color: #4a7c59;
+  color: var(--bb-success);
 }
 
 .stat-available ion-card-title {
-  color: #4a7c59;
+  color: var(--bb-success);
 }
 
 .stat-unavailable .stat-icon {
-  background: rgba(179, 58, 58, 0.12);
+  background: var(--bb-danger-soft-bg);
 }
 
 .stat-unavailable .stat-icon ion-icon {
-  color: #b33a3a;
+  color: var(--bb-danger);
 }
 
 .stat-unavailable ion-card-title {
-  color: #b33a3a;
+  color: var(--bb-danger);
+}
+
+/* GCash cards light up only when there is something to verify. */
+.stat-attention .stat-icon {
+  background: var(--bb-warning-soft-bg);
+}
+
+.stat-attention .stat-icon ion-icon {
+  color: var(--bb-warning-soft-text);
+}
+
+.stat-attention ion-card-title {
+  color: var(--bb-warning-soft-text);
 }
 
 /* ── Quick action tiles ── */
 .quick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--bb-space-4);
+  margin-bottom: var(--bb-space-5);
 }
 
 .quick-tile {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 18px;
+  gap: var(--bb-space-2);
+  height: 100%;
+  padding: var(--bb-space-5);
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-card);
   box-shadow: var(--bb-shadow-card);
   text-decoration: none;
   transition:
-    transform var(--bb-motion-base) var(--bb-ease),
-    border-color var(--bb-motion-base) var(--bb-ease),
-    box-shadow var(--bb-motion-base) var(--bb-ease);
+    transform var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
 .quick-tile .quick-icon {
@@ -104,16 +236,14 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: var(--bb-border-strong);
-  transition:
-    background-color var(--bb-motion-base) var(--bb-ease),
-    color var(--bb-motion-base) var(--bb-ease);
+  background: var(--bb-tan);
+  transition: background-color var(--bb-motion-fast) var(--bb-ease);
 }
 
 .quick-tile .quick-icon ion-icon {
   font-size: 20px;
   color: var(--bb-espresso);
-  transition: color var(--bb-motion-base) var(--bb-ease);
+  transition: color var(--bb-motion-fast) var(--bb-ease);
 }
 
 .quick-tile .quick-label {
@@ -131,7 +261,7 @@
 
 @media (hover: hover) {
   .quick-tile:hover {
-    border-color: #dcc9ab;
+    border-color: var(--bb-border-strong);
     transform: translateY(-2px);
     box-shadow: var(--bb-shadow-raised);
   }
@@ -146,11 +276,21 @@
 }
 
 .quick-tile:focus-visible {
-  outline: 2px solid var(--bb-caramel);
+  outline: 2px solid var(--bb-coffee);
   outline-offset: 2px;
 }
 
-.quick-card ion-card-content {
-  color: var(--bb-text-muted);
-  line-height: 1.55;
+@media (max-width: 700px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--bb-space-3);
+  }
+
+  .stat-card ion-card-title {
+    font-size: 30px;
+  }
+
+  .quick-tile {
+    padding: var(--bb-space-4);
+  }
 }

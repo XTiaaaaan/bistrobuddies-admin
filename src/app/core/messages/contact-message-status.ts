@@ -88,3 +88,25 @@ export function messagePreview(message: string, maxLength = 120): string {
   }
   return `${text.slice(0, Math.max(maxLength - 1, 1))}…`;
 }
+
+/**
+ * Maximum accepted reply length — mirrors the backend's
+ * `CONTACT_REPLY_MAX`, which stays authoritative.
+ */
+export const CONTACT_REPLY_MAX = 5000;
+
+/**
+ * `null` when the reply text is usable, otherwise the message to show.
+ * Judged after trimming, so whitespace-only input is rejected exactly like
+ * the backend rejects it; the server still validates every request.
+ */
+export function contactReplyError(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) {
+    return 'Reply text is required.';
+  }
+  if (value.length > CONTACT_REPLY_MAX) {
+    return `Reply must be ${CONTACT_REPLY_MAX} characters or fewer.`;
+  }
+  return null;
+}

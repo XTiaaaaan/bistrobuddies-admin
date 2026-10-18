@@ -24,9 +24,9 @@
   flex-direction: column;
   align-items: center;
   background: var(--bb-espresso);
-  border-radius: 26px;
+  border-radius: var(--bb-radius-lg);
   padding: 26px 16px 22px;
-  box-shadow: 0 10px 26px rgba(59, 36, 24, 0.2);
+  box-shadow: 0 10px 26px rgba(59, 35, 20, 0.2);
 }
 
 .admin-login-logo {
@@ -56,7 +56,7 @@
 }
 
 .admin-login-brand .brand-buddies {
-  color: var(--bb-caramel-light);
+  color: var(--bb-tan);
 }
 
 .admin-login-tagline {
@@ -64,7 +64,7 @@
   font-size: 10px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(245, 237, 228, 0.85);
+  color: rgba(245, 235, 224, 0.85);
   text-align: center;
 }
 
@@ -102,22 +102,22 @@
 .admin-login-fields ion-item {
   --background: var(--bb-surface-sunken);
   --background-hover: var(--bb-surface-sunken);
-  --border-radius: 14px;
+  --border-radius: var(--bb-radius-md);
   --min-height: 58px;
   --padding-start: 14px;
   --inner-padding-end: 14px;
   margin-bottom: 12px;
-  transition: box-shadow var(--bb-motion-base) var(--bb-ease);
+  transition: box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
 .admin-login-fields ion-item:focus-within {
-  box-shadow: 0 0 0 3px rgba(168, 124, 79, 0.18);
+  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
 }
 
 .admin-login-submit {
   --background: var(--bb-espresso);
-  --background-hover: #4f3628;
-  --border-radius: 14px;
+  --background-hover: #4e3626;
+  --border-radius: var(--bb-radius-md);
   height: 50px;
   font-weight: 700;
   letter-spacing: 0.3px;

@@ -2,6 +2,32 @@
   min-width: 760px;
 }
 
+/* Unread (NEW) rows stand out gently so they are easy to spot. */
+.message-table tbody tr {
+  transition: background-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.message-table tbody tr.is-new td {
+  background: var(--bb-warning-soft-bg);
+}
+
+.message-table tr.is-new .sender-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--bb-espresso);
+}
+
+.message-table tr.is-new .sender-name::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--bb-coffee);
+}
+
 /* Long subjects/messages stay on one line; the full text is in the detail. */
 .sender-cell,
 .subject-cell,
@@ -17,6 +43,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--bb-text-muted);
+  line-height: 1.5;
 }
 
 .date-cell {
@@ -25,15 +52,30 @@
 
 .action-cell {
   text-align: right;
+  white-space: nowrap;
 }
+
+/* Soft blue reads as "seen" without competing with green (Resolved). */
+.message-table ion-badge.ion-color-primary,
+.detail-head ion-badge.ion-color-primary {
+  --background: var(--bb-info-soft-bg);
+  --color: var(--bb-info-soft-text);
+}
+
+/* ── Pagination ── */
 
 .pagination-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 16px;
+  gap: var(--bb-space-3);
+  margin-top: var(--bb-space-4);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-card);
 }
 
 .page-info {
@@ -56,14 +98,31 @@
 
 /* ── Message detail modal ── */
 
+ion-modal {
+  --height: min(92%, 880px);
+  --width: min(680px, 100%);
+  --border-radius: var(--bb-radius-lg) var(--bb-radius-lg) 0 0;
+  --box-shadow: var(--bb-shadow-raised);
+  /* The modal body is the single scroll container; the wrapper must not
+   * add a second scrollbar beside it. */
+  overflow: hidden;
+}
+
+ion-modal ion-toolbar {
+  --background: var(--bb-espresso);
+  --color: #ffffff;
+  --min-height: 56px;
+  border-radius: var(--bb-radius-lg) var(--bb-radius-lg) 0 0;
+}
+
 .detail-content {
-  --background: var(--admin-bg, var(--bb-surface-sunken, #f7f1e8));
+  --background: var(--bb-cream);
 }
 
 .detail-panel {
   max-width: 640px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--bb-space-5) var(--bb-space-5) var(--bb-space-6);
 }
 
 .detail-head {
@@ -71,8 +130,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: var(--bb-space-3);
+  margin-bottom: var(--bb-space-3);
 }
 
 .detail-head h2 {
@@ -84,7 +143,7 @@
 }
 
 .detail-block {
-  padding: 14px 0;
+  padding: var(--bb-space-4) 0;
   border-top: 1px solid var(--bb-border);
 }
 
@@ -105,11 +164,20 @@
 }
 
 .detail-block a {
-  color: var(--bb-caramel);
+  color: var(--bb-coffee);
   font-weight: 600;
 }
 
+/* The customer's message sits left as a white bubble. */
 .detail-message {
+  display: inline-block;
+  max-width: 92%;
+  margin-top: 4px;
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-lg) var(--bb-radius-lg) var(--bb-radius-lg) 4px;
+  box-shadow: var(--bb-shadow-card);
   white-space: pre-wrap;
   line-height: 1.55;
 }
@@ -117,13 +185,112 @@
 .status-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--bb-space-2);
   margin-top: 4px;
 }
 
 .muted {
   color: var(--bb-text-soft);
   font-size: 13px;
+}
+
+/* ── Replies thread + composer ── */
+
+.reply-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bb-space-3);
+  margin-top: 4px;
+}
+
+/* Admin replies sit right as warm tan bubbles. */
+.reply-entry {
+  align-self: flex-end;
+  max-width: 88%;
+  border: 1px solid var(--bb-border-strong);
+  border-radius: var(--bb-radius-lg) var(--bb-radius-lg) 4px var(--bb-radius-lg);
+  padding: 10px 14px;
+  background: var(--bb-tan);
+}
+
+.reply-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.reply-sender {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bb-espresso);
+}
+
+.reply-date {
+  font-size: 12px;
+  color: var(--bb-text-muted);
+  white-space: nowrap;
+}
+
+.reply-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--bb-text);
+  white-space: pre-wrap;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.reply-composer {
+  margin-top: var(--bb-space-4);
+  padding-top: var(--bb-space-3);
+  border-top: 1px dashed var(--bb-border-strong);
+}
+
+.reply-composer ion-textarea {
+  --background: var(--bb-surface);
+  --color: var(--bb-text);
+  --placeholder-color: var(--bb-text-soft);
+  --padding-start: var(--bb-space-3);
+  --padding-end: var(--bb-space-3);
+  border: 1px solid var(--bb-border-strong);
+  border-radius: var(--bb-radius-md);
+  margin-top: var(--bb-space-2);
+  transition: border-color var(--bb-motion-fast) var(--bb-ease),
+    box-shadow var(--bb-motion-fast) var(--bb-ease);
+}
+
+.reply-composer ion-textarea:focus-within {
+  border-color: var(--bb-coffee);
+  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
+}
+
+.composer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bb-space-3);
+  margin-top: var(--bb-space-2);
+  flex-wrap: wrap;
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-2);
+}
+
+.reply-counter {
+  font-size: 12px;
+  color: var(--bb-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.reply-error {
+  margin: var(--bb-space-2) 0 0;
+  font-size: 13px;
+  color: var(--bb-danger-soft-text);
 }
 
 @media (max-width: 700px) {
@@ -136,6 +303,15 @@
   }
 
   .detail-panel {
-    padding: 16px;
+    padding: var(--bb-space-4) var(--bb-space-4) var(--bb-space-5);
+  }
+
+  .detail-message,
+  .reply-entry {
+    max-width: 100%;
+  }
+
+  ion-modal {
+    --width: 100%;
   }
 }

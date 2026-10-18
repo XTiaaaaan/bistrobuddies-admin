@@ -17,11 +17,24 @@ import {
   alertCircle,
   cafe,
   checkmarkCircle,
+  checkmarkDoneOutline,
   closeCircle,
+  mailOutline,
   receipt,
+  restaurantOutline,
+  timeOutline,
+  walletOutline,
 } from 'ionicons/icons';
 import { Product } from '@shared/models/product.model';
+import { Order } from '@shared/models/order.model';
 import { ProductsService } from '@shared/services/products.service';
+import { OrdersService } from '@shared/services/orders.service';
+import { isOrderStatus } from '@shared/core/orders/order-status';
+import { canConfirmPayment } from '@shared/core/orders/payment-decision';
+import { refundStatusOf } from '@shared/core/orders/refund';
+
+/** Order statuses that count as "being worked on" right now. */
+const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
 
 @Component({
   selector: 'admin-dashboard',
@@ -44,17 +57,75 @@ export class AdminDashboardPage implements OnInit {
   readonly products = signal<Product[]>([]);
   readonly status = signal<'loading' | 'ready' | 'error'>('loading');
 
+  /**
+   * Live orders from the same Firestore listener the Orders page uses, so
+   * every number here is real data — never a hardcoded sample.
+   */
+  readonly orders = signal<Order[]>([]);
+  readonly ordersStatus = signal<'loading' | 'ready' | 'error'>('loading');
+
   readonly total = computed(() => this.products().length);
   readonly available = computed(
     () => this.products().filter((product) => product.available !== false).length
   );
   readonly unavailable = computed(() => this.total() - this.available());
 
+  readonly orderTotal = computed(() => this.orders().length);
+  readonly pendingCount = computed(
+    () => this.orders().filter((order) => order.orderStatus === 'PENDING').length
+  );
+  readonly inProgressCount = computed(
+    () =>
+      this.orders().filter((order) =>
+        IN_PROGRESS_STATUSES.has(String(order.orderStatus))
+      ).length
+  );
+  readonly completedCount = computed(
+    () =>
+      this.orders().filter((order) => order.orderStatus === 'COMPLETED').length
+  );
+  readonly cancelledCount = computed(
+    () =>
+      this.orders().filter((order) => order.orderStatus === 'CANCELLED').length
+  );
+  /** GCash payments waiting on an admin to verify the real transaction. */
+  readonly gcashToVerifyCount = computed(
+    () => this.orders().filter((order) => canConfirmPayment(order)).length
+  );
+  /** Refunds opened but not yet completed (money not yet confirmed sent). */
+  readonly pendingRefundCount = computed(
+    () =>
+      this.orders().filter((order) => refundStatusOf(order) === 'REFUND_PENDING')
+        .length
+  );
+  /** Orders whose status is not part of the current vocabulary. */
+  readonly otherStatusCount = computed(
+    () =>
+      this.orders().filter((order) => !isOrderStatus(order.orderStatus)).length
+  );
+
+  readonly needsAttention = computed(
+    () => this.gcashToVerifyCount() > 0 || this.pendingRefundCount() > 0
+  );
+
   private readonly productsService = inject(ProductsService);
+  private readonly ordersService = inject(OrdersService);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    addIcons({ add, alertCircle, cafe, checkmarkCircle, closeCircle, receipt });
+    addIcons({
+      add,
+      alertCircle,
+      cafe,
+      checkmarkCircle,
+      checkmarkDoneOutline,
+      closeCircle,
+      mailOutline,
+      receipt,
+      restaurantOutline,
+      timeOutline,
+      walletOutline,
+    });
   }
 
   ngOnInit(): void {
@@ -67,6 +138,19 @@ export class AdminDashboardPage implements OnInit {
           this.status.set('ready');
         },
         error: () => this.status.set('error'),
+      });
+
+    this.ordersService
+      .watchOrders()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (orders) => {
+          this.orders.set(orders);
+          this.ordersStatus.set('ready');
+        },
+        // Orders are a bonus on this page: a read failure (e.g. permissions)
+        // must never take the product overview down with it.
+        error: () => this.ordersStatus.set('error'),
       });
   }
 }

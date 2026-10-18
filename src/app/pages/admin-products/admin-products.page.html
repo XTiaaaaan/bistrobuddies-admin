@@ -79,6 +79,12 @@
           </ion-button>
         </div>
       } @else {
+        @if (filtersActive()) {
+          <p class="results-count" role="status">
+            Showing {{ filteredProducts().length }} of
+            {{ products().length }} products
+          </p>
+        }
         <div class="product-list bb-stagger">
           @for (product of filteredProducts(); track product.id) {
             <ion-card class="product-card">
@@ -103,12 +109,25 @@
                     <ion-chip color="secondary">{{ product.category }}</ion-chip>
                   }
 
-                  <p class="product-description">{{ product.description }}</p>
+                  @if (product.description) {
+                    <p class="product-description">
+                      {{ product.description }}
+                    </p>
+                  }
 
                   <div class="price-row">
                     <span class="price-main">{{ priceOf(product) }}</span>
-                    @if (tiersLabel(product); as tiers) {
-                      <span class="price-tiers">{{ tiers }}</span>
+                    @if (sizePriceChips(product); as chips) {
+                      <span
+                        class="price-chips"
+                        [title]="tiersLabel(product)"
+                      >
+                        @for (chip of chips; track chip.label) {
+                          <span class="price-chip">
+                            {{ chip.label }} {{ chip.price }}
+                          </span>
+                        }
+                      </span>
                     }
                   </div>
                 </div>

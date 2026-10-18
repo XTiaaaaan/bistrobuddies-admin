@@ -75,14 +75,16 @@
             }
 
             <ion-item>
-              <ion-input
+              <ion-textarea
                 label="Description"
                 labelPlacement="stacked"
                 name="description"
                 placeholder="Short description shown to customers"
                 maxlength="2000"
+                autoGrow="true"
+                rows="3"
                 [(ngModel)]="description"
-              ></ion-input>
+              ></ion-textarea>
             </ion-item>
           </ion-list>
         </section>
@@ -175,14 +177,16 @@
             with the product.
           </p>
 
-          <input
-            class="image-file-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            name="imageFile"
-            [disabled]="saving() || loading()"
-            (change)="onFileSelected($event)"
-          />
+          <div class="upload-zone">
+            <input
+              class="image-file-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              name="imageFile"
+              [disabled]="saving() || loading()"
+              (change)="onFileSelected($event)"
+            />
+          </div>
 
           @if (editing() && !imageSelected() && imageUrl) {
             <p class="section-hint">
