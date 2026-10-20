@@ -736,3 +736,104 @@ ion-alert {
     display: none;
   }
 }
+
+.proof-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--bb-space-4);
+  background: rgba(20, 15, 12, 0.82);
+}
+
+.proof-lightbox-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  max-height: 92vh;
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.proof-lightbox-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bb-space-3);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-espresso);
+  color: #fff;
+}
+
+.proof-lightbox-meta {
+  min-width: 0;
+}
+
+.proof-lightbox-meta h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.proof-lightbox-meta p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.proof-lightbox-order {
+  opacity: 0.75;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px !important;
+}
+
+.proof-lightbox-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: var(--bb-space-3);
+  background: #161210;
+  overflow: auto;
+}
+
+.proof-lightbox-image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(92vh - 120px);
+  object-fit: contain;
+}
+
+.proof-lightbox-fallback {
+  max-width: 520px;
+  margin: 0;
+  padding: var(--bb-space-4);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-radius: var(--bb-radius-sm);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.proof-open-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bb-text-muted);
+}
+
+.proof-order-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px !important;
+}
+
+@media (max-width: 560px) {
+  .proof-lightbox {
+    padding: var(--bb-space-2);
+  }
+}

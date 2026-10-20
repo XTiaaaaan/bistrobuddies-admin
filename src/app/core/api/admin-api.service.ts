@@ -142,6 +142,24 @@ export class AdminApiService {
   }
 
   /**
+   * Records a GCash proof review decision through the backend's dedicated
+   * alias (`POST /api/admin/orders/:id/payment-proof`, admin only). It has
+   * the same authorized, transactional PAID/REJECTED behaviour as
+   * `/payment` and never changes `orderStatus`; the backend still enforces
+   * that approval requires submitted details and an uploaded proof.
+   */
+  async decideOrderPaymentProof(
+    orderId: string,
+    decision: PaymentDecision
+  ): Promise<{ id: string; paymentStatus: PaymentDecision }> {
+    return this.request<{ id: string; paymentStatus: PaymentDecision }>(
+      'POST',
+      `/admin/orders/${encodeURIComponent(orderId)}/payment-proof`,
+      { decision }
+    );
+  }
+
+  /**
    * Records a manual refund through the backend's authorized endpoint
    * (`POST /api/admin/orders/:id/refund`, admin only) and resolves with the
    * updated order's refund facts.

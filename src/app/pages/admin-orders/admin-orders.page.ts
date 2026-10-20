@@ -1,4 +1,12 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  HostListener,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, switchMap } from 'rxjs';
 import {
@@ -50,7 +58,16 @@ import {
   isGcashOrder,
   nonGcashPaymentNote,
   paymentDecisionHint,
+  paymentStatusOf,
 } from '@shared/core/orders/payment-decision';
+import {
+  hasSubmittedPaymentProof,
+  isAwaitingProofVerification,
+  paymentProofImageSrc,
+  paymentProofOf,
+  paymentProofRejectionReason as rejectionReasonOf,
+  paymentProofSubmittedAt,
+} from '@shared/core/orders/payment-proof';
 import {
   canCompleteRefund,
   canStartRefund,
@@ -65,7 +82,9 @@ import {
   Order,
   OrderRefundRequest,
   OrderStatus,
+  PaymentAuditEntry,
   PaymentDecision,
+  PaymentProof,
 } from '@shared/models/order.model';
 import { resolveProductImageSrc } from '@shared/core/products/product-image';
 import { OrdersService } from '@shared/services/orders.service';
@@ -77,6 +96,15 @@ const CANCELLED_ORDER_MESSAGE =
 
 /** Summary chip keys on the orders page (presentation only). */
 type QuickFilter = 'all' | 'pending' | 'completed' | 'cancelled' | 'gcash';
+
+/** Everything the enlarged proof preview needs, captured when it opens. */
+interface ProofPreview {
+  orderId: string;
+  customerName: string;
+  total: number;
+  submittedAt: Order['createdAt'];
+  url: string;
+}
 
 @Component({
   selector: 'admin-orders',
@@ -124,6 +152,12 @@ export class AdminOrdersPage implements OnInit {
   readonly paymentBusyId = signal<string | null>(null);
   /** Order id with an in-flight refund request (blocks re-clicks). */
   readonly refundBusyId = signal<string | null>(null);
+  /** Orders whose inline proof screenshot failed to load (expired URL, etc.). */
+  readonly failedProofIds = signal<ReadonlySet<string>>(new Set());
+  /** Enlarged GCash proof currently open, or `null` when closed. */
+  readonly proofPreview = signal<ProofPreview | null>(null);
+  /** Whether the enlarged preview image failed to load. */
+  readonly proofPreviewFailed = signal(false);
 
   readonly search = signal('');
   readonly statusFilter = signal('ALL');
@@ -162,9 +196,10 @@ export class AdminOrdersPage implements OnInit {
     () =>
       this.orders().filter((order) => order.orderStatus === 'CANCELLED').length
   );
-  /** GCash payments waiting on an admin to verify the real transaction. */
+  /** GCash proofs waiting on an admin to review the uploaded screenshot. */
   readonly gcashToVerifyCount = computed(
-    () => this.orders().filter((order) => canConfirmPayment(order)).length
+    () =>
+      this.orders().filter((order) => isAwaitingProofVerification(order)).length
   );
 
   private readonly reload$ = new BehaviorSubject<void>(undefined);
@@ -396,6 +431,111 @@ export class AdminOrdersPage implements OnInit {
     return nonGcashPaymentNote(order);
   }
 
+  // -- GCash payment proof (read-only display) ------------------------------
+
+  /** The submitted proof record (nested or flat aliases), or `null`. */
+  paymentProof(order: Order): PaymentProof | null {
+    return paymentProofOf(order);
+  }
+
+  /** Whether the customer submitted a proof URL. */
+  hasPaymentProof(order: Order): boolean {
+    return hasSubmittedPaymentProof(order);
+  }
+
+  /** Safe `<img src>` for the proof, or `''` when missing/unsupported. */
+  proofImageSrc(order: Order): string {
+    return paymentProofImageSrc(order);
+  }
+
+  /** When the proof was uploaded, if recorded. */
+  proofSubmittedAt(order: Order): Order['createdAt'] {
+    return paymentProofSubmittedAt(order);
+  }
+
+  /** Clear "proof is waiting for review" indicator for GCash orders only. */
+  awaitingProofVerification(order: Order): boolean {
+    return isAwaitingProofVerification(order);
+  }
+
+  isPaymentRejected(order: Order): boolean {
+    return paymentStatusOf(order) === 'REJECTED';
+  }
+
+  isPaymentPaid(order: Order): boolean {
+    return (
+      paymentStatusOf(order) === 'PAID' ||
+      paymentStatusOf(order) === 'SUCCEEDED' ||
+      paymentStatusOf(order) === 'CAPTURED' ||
+      paymentStatusOf(order) === 'COMPLETED'
+    );
+  }
+
+  /** Rejection explanation stored by the backend, when present. */
+  proofRejectionReason(order: Order): string | null {
+    return rejectionReasonOf(order);
+  }
+
+  /** Append-only payment audit trail kept by the backend (admin-only). */
+  paymentAuditEntries(order: Order): PaymentAuditEntry[] {
+    return order.paymentAudit ?? [];
+  }
+
+  paymentDecisionLabel(decision: unknown): string {
+    return String(decision ?? '').toUpperCase() === 'PAID'
+      ? 'Approved'
+      : 'Rejected';
+  }
+
+  /** Whether the inline proof image failed to load (expired/unavailable URL). */
+  proofImageFailed(order: Order): boolean {
+    return this.failedProofIds().has(order.id);
+  }
+
+  onProofImageError(order: Order): void {
+    this.failedProofIds.update((ids) => {
+      const next = new Set(ids);
+      next.add(order.id);
+      return next;
+    });
+  }
+
+  /**
+   * Opens the proof at a larger size. The URL is captured on open so the
+   * preview never changes while the live order snapshot updates.
+   */
+  openProofPreview(order: Order): void {
+    const url = this.proofImageSrc(order);
+    if (!url) {
+      this.onProofImageError(order);
+      return;
+    }
+    this.proofPreviewFailed.set(false);
+    this.proofPreview.set({
+      orderId: order.id,
+      customerName: this.customerName(order),
+      total: order.total,
+      submittedAt: this.proofSubmittedAt(order),
+      url,
+    });
+  }
+
+  closeProofPreview(): void {
+    this.proofPreview.set(null);
+    this.proofPreviewFailed.set(false);
+  }
+
+  onProofPreviewError(): void {
+    this.proofPreviewFailed.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.proofPreview()) {
+      this.closeProofPreview();
+    }
+  }
+
   /** Whether any payment-decision request is running for this order. */
   isPaymentBusy(order: Order): boolean {
     return this.paymentBusyId() === order.id;
@@ -422,8 +562,8 @@ export class AdminOrdersPage implements OnInit {
       header: `${action}?`,
       message:
         decision === 'PAID'
-          ? `Only confirm when you have verified the actual received GCash transaction for order ${shortId(order.id)} in the BistroBuddies GCash account. The submitted account name does not prove payment. Confirming records payment as PAID; the order fulfilment status stays ${String(order.orderStatus)}.`
-          : `Only reject after checking GCash and finding no matching transaction for order ${shortId(order.id)}. The customer can resubmit GCash details afterwards. The order fulfilment status stays ${String(order.orderStatus)}.`,
+          ? `Only confirm after reviewing the uploaded payment screenshot and verifying the actual received GCash transaction for order ${shortId(order.id)} in the BistroBuddies GCash account. The submitted account name and screenshot do not prove payment on their own. Confirming records payment as PAID; the order fulfilment status stays ${String(order.orderStatus)}.`
+          : `Only reject after reviewing the uploaded payment screenshot and checking GCash for a matching transaction for order ${shortId(order.id)}. The customer can resubmit GCash details and proof afterwards. The order fulfilment status stays ${String(order.orderStatus)}.`,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
@@ -450,9 +590,21 @@ export class AdminOrdersPage implements OnInit {
     if (this.paymentBusyId() === order.id) {
       return;
     }
+    // Defense in depth: approval requires submitted proof, and only a
+    // VERIFYING GCash order with details can be decided at all.
+    if (!canDecidePayment(order, decision)) {
+      await this.showError(
+        paymentDecisionHint(order) ??
+          'This order cannot receive a payment decision right now. Refresh and try again.'
+      );
+      return;
+    }
     this.paymentBusyId.set(order.id);
     try {
-      const result = await this.adminApi.decideOrderPayment(order.id, decision);
+      const result = await this.adminApi.decideOrderPaymentProof(
+        order.id,
+        decision
+      );
       const toast = await this.toastCtrl.create({
         message:
           result.paymentStatus === 'PAID'
