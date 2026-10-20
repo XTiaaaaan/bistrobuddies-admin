@@ -13,6 +13,7 @@
  * payment state.
  */
 import { Order, PaymentDecision } from '@shared/models/order.model';
+import { hasSubmittedPaymentProof } from './payment-proof';
 
 /** Payment methods that carry customer-submitted GCash details. */
 export function isGcashOrder(order: Order): boolean {
@@ -53,9 +54,10 @@ export function paymentStatusOf(order: Order): string {
 /**
  * Whether the admin may record `decision` for this order right now. Per the
  * backend contract only a `VERIFYING` GCash order with submitted details
- * accepts a decision: `PAID` is final, `REJECTED` needs a customer
- * resubmission first (which returns the order to `VERIFYING`), and
- * non-GCash orders are rejected with `invalid_payment_method`.
+ * accepts a decision; approval (`PAID`) additionally requires the uploaded
+ * payment proof. `PAID` is final, `REJECTED` needs a customer resubmission
+ * first (which returns the order to `VERIFYING`), and non-GCash orders are
+ * rejected with `invalid_payment_method`.
  */
 export function canDecidePayment(
   order: Order,
@@ -64,7 +66,13 @@ export function canDecidePayment(
   if (decision !== 'PAID' && decision !== 'REJECTED') {
     return false;
   }
-  return hasSubmittedGcashDetails(order) && paymentStatusOf(order) === 'VERIFYING';
+  if (
+    !hasSubmittedGcashDetails(order) ||
+    paymentStatusOf(order) !== 'VERIFYING'
+  ) {
+    return false;
+  }
+  return decision === 'REJECTED' || hasSubmittedPaymentProof(order);
 }
 
 /** Whether the Confirm Payment button applies to this order. */
@@ -92,9 +100,12 @@ export function paymentDecisionHint(order: Order): string | null {
     case 'REJECTED':
       return 'Payment was rejected. The order returns here automatically if the customer resubmits GCash details.';
     case 'VERIFYING':
-      return hasSubmittedGcashDetails(order)
+      if (!hasSubmittedGcashDetails(order)) {
+        return 'Waiting for the customer to submit GCash details.';
+      }
+      return hasSubmittedPaymentProof(order)
         ? null
-        : 'Waiting for the customer to submit GCash details.';
+        : 'GCash details received, but the payment screenshot has not been uploaded yet. Approval requires proof; rejection is still possible.';
     default:
       // The backend moves an order to VERIFYING in the same transaction that
       // stores the details, so details with any other status only happen
