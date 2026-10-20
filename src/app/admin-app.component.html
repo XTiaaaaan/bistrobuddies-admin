@@ -17,6 +17,7 @@
       </ion-title>
       @if (signedIn()) {
         <ion-buttons slot="end">
+          <admin-notifications-bell></admin-notifications-bell>
           <ion-button (click)="logout()">
             <ion-icon slot="start" name="log-out"></ion-icon>
             <span class="logout-label">Log Out</span>

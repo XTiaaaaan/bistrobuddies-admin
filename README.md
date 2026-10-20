@@ -61,8 +61,10 @@ No secrets belong in this repository.
 - **Order status transitions** go through the backend
   (`POST /api/admin/orders/:id/status`) from the Orders page
   (`src/app/pages/admin-orders/`). Allowed moves are checked against the
-  backend's status graph before they are offered. Confirming payment never
-  changes the fulfilment status.
+  backend's status graph before they are offered. Delivery orders can move
+  from `READY` to `OUT_FOR_DELIVERY` ("On the Way"), while pickup orders can
+  complete directly from `READY` and are never offered the delivery stage.
+  Confirming payment never changes the fulfilment status.
 - **Manual GCash verification** (no gateway) also goes through the backend:
   the Orders page shows the submitted GCash account name + mobile number and
   records the admin decision with
@@ -83,6 +85,26 @@ No secrets belong in this repository.
   throws until that endpoint exists.
 
 See `../integration-docs/` for the API contract and architecture.
+
+## Admin notifications
+
+The signed-in header shows an in-app bell for two events:
+
+- a genuinely new order appearing after the initial live snapshot;
+- a GCash payment proof submitted on an order awaiting verification.
+
+Alerts are derived from the existing live `orders` Firestore listener and are
+only started after `users/{uid}` confirms `role: 'admin'`. The first snapshot
+is a baseline, so refreshing the page never re-announces old orders or proofs.
+Read state is kept in `localStorage` per administrator UID. Clicking an alert
+opens the matching order on the Orders page.
+
+These alerts require the site to be open. The backend can also send admin FCM
+push messages, but this browser app does not register a service worker or a
+VAPID web-push key yet. To receive pushes while the site is closed, add a
+Firebase Messaging service worker, configure a Web Push certificate (VAPID)
+in Firebase, request notification permission, and register the admin token
+with the backend's existing admin device-token flow.
 
 ## Known issues
 

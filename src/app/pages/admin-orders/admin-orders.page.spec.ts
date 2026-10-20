@@ -1,10 +1,11 @@
-import { provideHttpClient } from '@angular/common/http';
+﻿import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
   TestRequest,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -13,8 +14,8 @@ import { OrdersService } from '@shared/services/orders.service';
 import { AuthService } from '@shared/services/auth.service';
 import { AdminOrdersPage } from './admin-orders.page';
 
-const paymentUrl = (id: string) =>
-  `${environment.apiBaseUrl}/admin/orders/${id}/payment`;
+const paymentProofUrl = (id: string) =>
+  `${environment.apiBaseUrl}/admin/orders/${id}/payment-proof`;
 const statusUrl = (id: string) =>
   `${environment.apiBaseUrl}/admin/orders/${id}/status`;
 const refundUrl = (id: string) =>
@@ -83,6 +84,11 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
       accountName: 'Juan dela Cruz',
       accountNumber: '09171234567',
     },
+    paymentProof: {
+      url: 'https://example.com/proofs/order-1.jpg',
+      mimeType: 'image/jpeg',
+      submittedAt: '2026-10-20T08:30:00.000Z',
+    },
     orderStatus: 'PENDING',
     createdAt: null,
     updatedAt: null,
@@ -94,6 +100,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
   let page: AdminOrdersPage;
   let httpMock: HttpTestingController;
   let ordersSubject: BehaviorSubject<Order[]>;
+  let queryParams: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   const getIdToken = vi.fn();
   const alertCreate = vi.fn();
@@ -139,6 +146,10 @@ describe('AdminOrdersPage GCash payment verification', () => {
         },
         { provide: AlertController, useValue: { create: alertCreate } },
         { provide: ToastController, useValue: { create: toastCreate } },
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParams.asObservable() },
+        },
       ],
     });
     page = TestBed.inject(AdminOrdersPage);
@@ -149,6 +160,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     vi.clearAllMocks();
     lastAlertOptions = null;
     ordersSubject = new BehaviorSubject<Order[]>([]);
+    queryParams = new BehaviorSubject(convertToParamMap({}));
     getIdToken.mockResolvedValue('test-id-token');
     alertPresent.mockResolvedValue(undefined);
     alertCreate.mockImplementation(async (options) => {
@@ -174,6 +186,20 @@ describe('AdminOrdersPage GCash payment verification', () => {
     httpMock.expectNone(() => true);
   });
 
+  it('focuses the order referenced by the notification query parameter', async () => {
+    ordersSubject.next([
+      makeOrder({ id: 'order-1' }),
+      makeOrder({ id: 'order-2' }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    queryParams.next(convertToParamMap({ orderId: 'order-2' }));
+
+    expect(page.focusedOrderId()).toBe('order-2');
+    expect(page.search()).toBe('order-2');
+    expect(page.visibleOrders().map((order) => order.id)).toEqual(['order-2']);
+  });
+
   it('displays the submitted GCash account name and mobile number', async () => {
     ordersSubject.next([makeOrder()]);
     await waitFor(() => page.status() === 'ready');
@@ -183,6 +209,133 @@ describe('AdminOrdersPage GCash payment verification', () => {
     expect(page.hasGcashDetails(order)).toBe(true);
     expect(page.gcashName(order)).toBe('Juan dela Cruz');
     expect(page.gcashNumber(order)).toBe('09171234567');
+  });
+
+  it('exposes the submitted GCash proof and its metadata', async () => {
+    ordersSubject.next([makeOrder()]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.hasPaymentProof(order)).toBe(true);
+    expect(page.paymentProof(order)?.mimeType).toBe('image/jpeg');
+    expect(page.proofImageSrc(order)).toBe(
+      'https://example.com/proofs/order-1.jpg'
+    );
+    expect(page.proofSubmittedAt(order)).toBe('2026-10-20T08:30:00.000Z');
+    expect(page.awaitingProofVerification(order)).toBe(true);
+  });
+
+  it('opens and closes the enlarged proof preview', async () => {
+    ordersSubject.next([makeOrder()]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    page.openProofPreview(order);
+
+    expect(page.proofPreview()).toEqual({
+      orderId: 'order-1',
+      customerName: 'Juan dela Cruz',
+      total: 198,
+      submittedAt: '2026-10-20T08:30:00.000Z',
+      url: 'https://example.com/proofs/order-1.jpg',
+    });
+
+    page.onProofPreviewError();
+    expect(page.proofPreviewFailed()).toBe(true);
+
+    page.closeProofPreview();
+    expect(page.proofPreview()).toBeNull();
+    expect(page.proofPreviewFailed()).toBe(false);
+  });
+
+  it('closes the enlarged proof preview with the Escape key', async () => {
+    ordersSubject.next([makeOrder()]);
+    await waitFor(() => page.status() === 'ready');
+
+    page.openProofPreview(page.orders()[0]);
+    expect(page.proofPreview()).not.toBeNull();
+
+    page.onEscapeKey();
+    expect(page.proofPreview()).toBeNull();
+  });
+
+  it('flags expired proof images without breaking order actions', async () => {
+    ordersSubject.next([makeOrder()]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.proofImageFailed(order)).toBe(false);
+    page.onProofImageError(order);
+    expect(page.proofImageFailed(order)).toBe(true);
+    expect(page.canRejectPayment(order)).toBe(true);
+  });
+
+  it('does not open a preview for missing or unsafe proof URLs', async () => {
+    ordersSubject.next([
+      makeOrder({ id: 'missing-proof', paymentProof: null }),
+      makeOrder({
+        id: 'unsafe-proof',
+        paymentProof: { url: 'javascript:alert(1)' },
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    for (const order of page.orders()) {
+      page.openProofPreview(order);
+      expect(page.proofPreview()).toBeNull();
+      expect(page.proofImageFailed(order)).toBe(true);
+    }
+  });
+
+  it('requires a screenshot before approving but still allows rejection', async () => {
+    ordersSubject.next([makeOrder({ paymentProof: null })]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.hasPaymentProof(order)).toBe(false);
+    expect(page.canConfirmPayment(order)).toBe(false);
+    expect(page.canRejectPayment(order)).toBe(true);
+    expect(page.paymentHint(order)).toMatch(/screenshot has not been uploaded/i);
+
+    await page.applyPaymentDecision(order, 'PAID');
+    await tick();
+    httpMock.expectNone(
+      (req) =>
+        req.url === paymentProofUrl('order-1') && req.method === 'POST'
+    );
+  });
+
+  it('shows the rejection reason and payment audit history', async () => {
+    ordersSubject.next([
+      makeOrder({
+        paymentStatus: 'REJECTED',
+        paymentDecision: {
+          decision: 'REJECTED',
+          decidedBy: 'admin-1',
+          decidedAt: '2026-10-20T09:00:00.000Z',
+          reason: 'No matching GCash transaction.',
+        },
+        paymentAudit: [
+          {
+            from: 'VERIFYING',
+            to: 'REJECTED',
+            actorUid: 'admin-1',
+            actorRole: 'admin',
+          },
+        ],
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.isPaymentRejected(order)).toBe(true);
+    expect(page.paymentDecisionLabel(order.paymentDecision?.decision)).toBe(
+      'Rejected'
+    );
+    expect(page.proofRejectionReason(order)).toBe(
+      'No matching GCash transaction.'
+    );
+    expect(page.paymentAuditEntries(order)).toHaveLength(1);
   });
 
   it('handles orders with no submitted details', async () => {
@@ -236,7 +389,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     // Nothing reaches the backend until the admin confirms the dialog.
     await tick();
     httpMock.expectNone(
-      (req) => req.url === paymentUrl('order-1') && req.method === 'POST'
+      (req) => req.url === paymentProofUrl('order-1') && req.method === 'POST'
     );
   });
 
@@ -250,7 +403,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     expect(lastAlertOptions?.message).toMatch(/GCash/i);
     await tick();
     httpMock.expectNone(
-      (req) => req.url === paymentUrl('order-1') && req.method === 'POST'
+      (req) => req.url === paymentProofUrl('order-1') && req.method === 'POST'
     );
   });
 
@@ -261,7 +414,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     const order = page.orders()[0];
     await confirmDialog(order, 'PAID');
 
-    const request = await waitForRequest(httpMock, paymentUrl('order-1'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('order-1'));
     expect(request.request.body).toEqual({ decision: 'PAID' });
     expect(JSON.stringify(request.request.body)).not.toContain('orderStatus');
     expect(request.request.headers.get('Authorization')).toBe(
@@ -284,7 +437,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     const order = page.orders()[0];
     await confirmDialog(order, 'REJECTED');
 
-    const request = await waitForRequest(httpMock, paymentUrl('order-1'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('order-1'));
     expect(request.request.body).toEqual({ decision: 'REJECTED' });
 
     request.flush({ id: 'order-1', paymentStatus: 'REJECTED' });
@@ -302,7 +455,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     const order = page.orders()[0];
     await confirmDialog(order, 'PAID');
 
-    const request = await waitForRequest(httpMock, paymentUrl('order-1'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('order-1'));
     request.flush(
       {
         error: {
@@ -330,13 +483,13 @@ describe('AdminOrdersPage GCash payment verification', () => {
     const first = page.applyPaymentDecision(order, 'PAID');
     const second = page.applyPaymentDecision(order, 'PAID');
 
-    const request = await waitForRequest(httpMock, paymentUrl('order-1'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('order-1'));
     request.flush({ id: 'order-1', paymentStatus: 'PAID' });
     await Promise.all([first, second]);
 
     // Only the first decision reached the backend.
     httpMock.expectNone(
-      (req) => req.method === 'POST' && req.url === paymentUrl('order-1')
+      (req) => req.method === 'POST' && req.url === paymentProofUrl('order-1')
     );
     expect(page.isPaymentBusy(order)).toBe(false);
   });
@@ -353,7 +506,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     // No second confirmation dialog while the request runs.
     expect(alertCreate).not.toHaveBeenCalled();
 
-    const request = await waitForRequest(httpMock, paymentUrl('order-1'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('order-1'));
     request.flush({ id: 'order-1', paymentStatus: 'PAID' });
     await inFlight;
   });
@@ -373,7 +526,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     await page.requestPaymentDecision(order, 'PAID');
     await tick();
     httpMock.expectNone(
-      (req) => req.url === paymentUrl('cod-1') && req.method === 'POST'
+      (req) => req.url === paymentProofUrl('cod-1') && req.method === 'POST'
     );
     expect(toastCreate).toHaveBeenCalledWith(
       expect.objectContaining({ color: 'danger' })
@@ -391,7 +544,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     await page.requestPaymentDecision(order, 'REJECTED');
     await tick();
     httpMock.expectNone(
-      (req) => req.url === paymentUrl('order-1') && req.method === 'POST'
+      (req) => req.url === paymentProofUrl('order-1') && req.method === 'POST'
     );
   });
 
@@ -410,6 +563,59 @@ describe('AdminOrdersPage GCash payment verification', () => {
 
     request.flush({ id: 'order-1', orderStatus: 'CONFIRMED' });
     await waitFor(() => page.busyId() === null);
+  });
+
+  it('offers delivery orders the On the Way stage', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'delivery-1',
+        orderStatus: 'READY',
+        fulfillmentType: 'DELIVERY',
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.fulfillmentOf(order)).toBe('Delivery');
+    expect(page.allowedNext(order)).toEqual([
+      'OUT_FOR_DELIVERY',
+      'COMPLETED',
+      'CANCELLED',
+    ]);
+    expect(page.statusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
+
+    await page.requestStatusChange(order, 'OUT_FOR_DELIVERY');
+    expect(lastAlertOptions?.message).toContain('On the Way');
+    confirmButton().handler?.();
+
+    const request = await waitForRequest(httpMock, statusUrl('delivery-1'));
+    expect(request.request.body).toEqual({ orderStatus: 'OUT_FOR_DELIVERY' });
+    request.flush({ id: 'delivery-1', orderStatus: 'OUT_FOR_DELIVERY' });
+    await waitFor(() => page.busyId() === null);
+    expect(toastCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Order status updated to On the Way.' })
+    );
+  });
+
+  it('keeps pickup orders out of the delivery stage', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'pickup-1',
+        orderStatus: 'READY',
+        fulfillmentType: 'PICKUP',
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.fulfillmentOf(order)).toBe('Pickup');
+    expect(page.allowedNext(order)).toEqual(['COMPLETED', 'CANCELLED']);
+
+    alertCreate.mockClear();
+    await page.requestStatusChange(order, 'OUT_FOR_DELIVERY');
+    expect(alertCreate).not.toHaveBeenCalled();
+    await tick();
+    httpMock.expectNone((req) => req.url === statusUrl('pickup-1'));
   });
 });
 
@@ -565,7 +771,7 @@ describe('AdminOrdersPage cancelled orders', () => {
     // explicit admin decision, and no payment request fires on its own.
     expect(page.canConfirmPayment(order)).toBe(true);
     await tick();
-    httpMock.expectNone((req) => req.url === paymentUrl('cancelled-gcash'));
+    httpMock.expectNone((req) => req.url === paymentProofUrl('cancelled-gcash'));
   });
 
   it('records a payment decision for a cancelled GCash order as before', async () => {
@@ -586,7 +792,7 @@ describe('AdminOrdersPage cancelled orders', () => {
     );
     confirm?.handler?.();
 
-    const request = await waitForRequest(httpMock, paymentUrl('cancelled-gcash'));
+    const request = await waitForRequest(httpMock, paymentProofUrl('cancelled-gcash'));
     expect(request.request.body).toEqual({ decision: 'PAID' });
     expect(JSON.stringify(request.request.body)).not.toContain('orderStatus');
     request.flush({ id: 'cancelled-gcash', paymentStatus: 'PAID' });
@@ -836,7 +1042,7 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
     });
     await waitFor(() => page.isRefundBusy(order) === false);
 
-    // The row still reads REFUND_PENDING — completion never happens here,
+    // The row still reads REFUND_PENDING â€” completion never happens here,
     // only a later, explicitly confirmed second action can do that.
     expect(page.refundStatus(order)).toBe('NOT_REFUNDED');
   });
@@ -902,7 +1108,7 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
       expect.objectContaining({ color: 'danger' })
     );
 
-    // The handler refuses the action too — nothing reaches the backend.
+    // The handler refuses the action too â€” nothing reaches the backend.
     await page.applyRefund(order, { action: 'COMPLETE', confirmed: true });
     await tick();
     httpMock.expectNone((req) => req.url === refundUrl('refund-1'));
@@ -987,10 +1193,10 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
     await waitFor(() => page.status() === 'ready');
 
     const order = page.orders()[0];
-    // No refund for a cancelled but still-verifying order…
+    // No refund for a cancelled but still-verifying orderâ€¦
     expect(page.canStartRefund(order)).toBe(false);
     expect(page.canCompleteRefund(order)).toBe(false);
-    // …but the payment decision workflow is exactly as before.
+    // â€¦but the payment decision workflow is exactly as before.
     expect(page.isGcashOrder(order)).toBe(true);
     expect(page.hasGcashDetails(order)).toBe(true);
     expect(page.canConfirmPayment(order)).toBe(true);
@@ -1015,3 +1221,4 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
     expect(body).not.toContain('orderStatus');
   });
 });
+

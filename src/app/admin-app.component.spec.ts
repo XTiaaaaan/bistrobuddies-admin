@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { provideRouter } from '@angular/router';
 import { AdminAppComponent } from './admin-app.component';
 import { AdminSessionService } from './core/auth/admin-session.service';
+import { AdminNotificationsService } from './services/admin-notifications.service';
 
 describe('AdminAppComponent navigation', () => {
   function setup(signedIn: boolean): HTMLElement {
@@ -15,6 +16,17 @@ describe('AdminAppComponent navigation', () => {
           useValue: {
             signedIn$: new BehaviorSubject(signedIn),
             logout: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: AdminNotificationsService,
+          useValue: {
+            notifications: () => [],
+            unreadCount: () => 0,
+            authorized: () => false,
+            start: vi.fn(),
+            markAllRead: vi.fn(),
+            markRead: vi.fn(),
           },
         },
       ],

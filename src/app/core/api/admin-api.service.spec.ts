@@ -26,6 +26,9 @@ describe('AdminApiService', () => {
   const paymentUrl = (orderId: string) =>
     `${environment.apiBaseUrl}/admin/orders/${orderId}/payment`;
 
+  const paymentProofUrl = (orderId: string) =>
+    `${environment.apiBaseUrl}/admin/orders/${orderId}/payment-proof`;
+
   const refundUrl = (orderId: string) =>
     `${environment.apiBaseUrl}/admin/orders/${orderId}/refund`;
 
@@ -528,6 +531,41 @@ describe('AdminApiService', () => {
       id: 'order-2',
       paymentStatus: 'REJECTED',
     });
+  });
+
+  it('decides a GCash proof through the payment-proof endpoint', async () => {
+    const promise = api.decideOrderPaymentProof('order-1', 'PAID');
+    await tick();
+
+    const request = httpMock.expectOne(paymentProofUrl('order-1'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ decision: 'PAID' });
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer test-id-token'
+    );
+    expect(JSON.stringify(request.request.body)).not.toContain('orderStatus');
+
+    request.flush({ id: 'order-1', paymentStatus: 'PAID' });
+
+    await expect(promise).resolves.toEqual({
+      id: 'order-1',
+      paymentStatus: 'PAID',
+    });
+  });
+
+  it('encodes the order id in the payment-proof endpoint path', async () => {
+    const promise = api.decideOrderPaymentProof('order / 1', 'REJECTED');
+    await tick();
+
+    const request = httpMock.expectOne(
+      (req) =>
+        req.method === 'POST' &&
+        req.url ===
+          `${environment.apiBaseUrl}/admin/orders/order%20%2F%201/payment-proof`
+    );
+    expect(request.request.body).toEqual({ decision: 'REJECTED' });
+    request.flush({ id: 'order / 1', paymentStatus: 'REJECTED' });
+    await promise;
   });
 
   it('never sends order status with a payment decision', async () => {

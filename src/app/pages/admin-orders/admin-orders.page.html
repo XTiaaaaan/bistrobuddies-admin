@@ -69,7 +69,7 @@
           (click)="applyQuickFilter('gcash')"
         >
           <strong>{{ gcashToVerifyCount() }}</strong>
-          <span>GCash to verify</span>
+          <span>Proofs to review</span>
         </button>
       </nav>
     }
@@ -190,7 +190,9 @@
         @for (order of visibleOrders(); track order.id) {
           <ion-card
             class="order-card"
+            [id]="'order-' + order.id"
             [class.order-card--cancelled]="isCancelled(order)"
+            [class.order-card--focused]="focusedOrderId() === order.id"
           >
             <div class="order-head">
               <div class="order-id">
@@ -210,6 +212,7 @@
                 <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
                   {{ order.paymentMethod }}
                 </ion-badge>
+                <ion-badge color="light">{{ fulfillmentOf(order) }}</ion-badge>
                 @if (showsRefundStatus(order)) {
                   <ion-badge [color]="refundColor(refundStatus(order))">
                     Refund: {{ refundLabel(refundStatus(order)) }}
@@ -349,6 +352,130 @@
                   </ion-badge>
                 </p>
                 @if (isGcashOrder(order)) {
+                  @if (paymentProof(order); as proof) {
+                    <div
+                      class="proof-panel"
+                      [class.proof-panel--rejected]="isPaymentRejected(order)"
+                    >
+                      <div class="proof-head">
+                        <h4>GCash payment proof</h4>
+                        @if (awaitingProofVerification(order)) {
+                          <ion-badge color="warning">
+                            Awaiting verification
+                          </ion-badge>
+                        } @else if (isPaymentRejected(order)) {
+                          <ion-badge color="danger">Proof rejected</ion-badge>
+                        } @else if (isPaymentPaid(order)) {
+                          <ion-badge color="success">Proof verified</ion-badge>
+                        }
+                      </div>
+                      <div class="proof-layout">
+                        <div class="proof-image-column">
+                          @if (proofImageSrc(order); as proofSrc) {
+                            @if (proofImageFailed(order)) {
+                              <div class="proof-unavailable" role="status">
+                                Screenshot unavailable or the link has
+                                expired. Verify the transaction in GCash before
+                                deciding.
+                              </div>
+                            } @else {
+                              <button
+                                type="button"
+                                class="proof-thumb-button"
+                                (click)="openProofPreview(order)"
+                                [attr.aria-label]="
+                                  'Open a larger GCash payment proof for order ' +
+                                  order.id
+                                "
+                              >
+                                <img
+                                  class="proof-thumb"
+                                  [src]="proofSrc"
+                                  [alt]="
+                                    'GCash payment proof for order ' + order.id
+                                  "
+                                  loading="lazy"
+                                  (error)="onProofImageError(order)"
+                                />
+                              </button>
+                              <span class="proof-open-hint">Open larger</span>
+                            }
+                          } @else {
+                            <div class="proof-unavailable" role="status">
+                              The screenshot URL is missing or unavailable.
+                              Check the customer's GCash submission before
+                              deciding.
+                            </div>
+                          }
+                        </div>
+                        <dl class="proof-details">
+                          <div>
+                            <dt>Order ID</dt>
+                            <dd class="proof-order-id">{{ order.id }}</dd>
+                          </div>
+                          <div>
+                            <dt>Customer</dt>
+                            <dd>{{ customerName(order) }}</dd>
+                          </div>
+                          <div>
+                            <dt>Total amount</dt>
+                            <dd>{{ formatMoney(order.total) }}</dd>
+                          </div>
+                          <div>
+                            <dt>Submitted</dt>
+                            <dd>{{ formatDate(proofSubmittedAt(order)) }}</dd>
+                          </div>
+                          @if (proof.mimeType) {
+                            <div>
+                              <dt>File type</dt>
+                              <dd>{{ proof.mimeType }}</dd>
+                            </div>
+                          }
+                        </dl>
+                      </div>
+                      @if (proofRejectionReason(order); as reason) {
+                        <p class="proof-rejection-reason">
+                          <strong>Rejection reason:</strong> {{ reason }}
+                        </p>
+                      }
+                      @if (order.paymentDecision; as decision) {
+                        <p class="proof-decision">
+                          {{ paymentDecisionLabel(decision.decision) }} by
+                          {{ decision.decidedBy || 'an administrator' }}
+                          @if (decision.decidedAt) {
+                            on {{ formatDate(decision.decidedAt) }}
+                          }
+                        </p>
+                      }
+                      @if (paymentAuditEntries(order).length > 0) {
+                        <details class="payment-audit">
+                          <summary>
+                            Payment audit history ({{
+                              paymentAuditEntries(order).length
+                            }})
+                          </summary>
+                          <ul>
+                            @for (
+                              entry of paymentAuditEntries(order);
+                              track $index
+                            ) {
+                              <li>
+                                {{ entry.from }} to {{ entry.to }} -
+                                {{ entry.actorRole }}
+                              </li>
+                            }
+                          </ul>
+                        </details>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted proof-missing">
+                      No GCash payment proof has been uploaded yet. The
+                      customer must submit a screenshot before payment can be
+                      approved.
+                    </p>
+                  }
+
                   @if (canConfirmPayment(order) || canRejectPayment(order)) {
                     <div class="verify-panel" role="group" aria-label="GCash verification">
                       <p class="verify-head">
@@ -372,11 +499,12 @@
                         </div>
                       </dl>
                       <p class="verify-note">
-                        Check the business GCash account for a matching
+                        Review the screenshot above and check the business
+                        GCash account for a matching
                         {{ formatMoney(order.total) }} transaction before
-                        deciding. The submitted details do not prove payment —
-                        GCash stays unconfirmed until an admin verifies it
-                        here.
+                        deciding. The submitted details and screenshot do not
+                        prove payment on their own - GCash stays unconfirmed
+                        until an admin verifies it here.
                       </p>
                       <div class="status-actions">
                         @if (canConfirmPayment(order)) {
@@ -507,3 +635,50 @@
     }
   </div>
 </ion-content>
+
+@if (proofPreview(); as preview) {
+  <div
+    class="proof-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="GCash payment proof preview"
+    (click)="closeProofPreview()"
+  >
+    <div class="proof-lightbox-panel" (click)="$event.stopPropagation()">
+      <div class="proof-lightbox-head">
+        <div class="proof-lightbox-meta">
+          <h2>GCash payment proof</h2>
+          <p>{{ preview.customerName }} - {{ formatMoney(preview.total) }}</p>
+          <p class="proof-lightbox-order">
+            Order {{ preview.orderId }} - submitted
+            {{ formatDate(preview.submittedAt) }}
+          </p>
+        </div>
+        <ion-button
+          fill="clear"
+          color="light"
+          aria-label="Close payment proof preview"
+          (click)="closeProofPreview()"
+        >
+          <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+        </ion-button>
+      </div>
+      <div class="proof-lightbox-body">
+        @if (proofPreviewFailed()) {
+          <p class="proof-lightbox-fallback" role="status">
+            This payment screenshot could not be loaded. The link may have
+            expired. Verify the transaction directly in the business GCash
+            account before deciding.
+          </p>
+        } @else {
+          <img
+            class="proof-lightbox-image"
+            [src]="preview.url"
+            [alt]="'GCash payment proof for order ' + preview.orderId"
+            (error)="onProofPreviewError()"
+          />
+        }
+      </div>
+    </div>
+  </div>
+}

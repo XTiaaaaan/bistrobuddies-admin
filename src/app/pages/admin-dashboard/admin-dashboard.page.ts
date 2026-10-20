@@ -34,7 +34,12 @@ import { canConfirmPayment } from '@shared/core/orders/payment-decision';
 import { refundStatusOf } from '@shared/core/orders/refund';
 
 /** Order statuses that count as "being worked on" right now. */
-const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
+const IN_PROGRESS_STATUSES = new Set([
+  'CONFIRMED',
+  'PREPARING',
+  'READY',
+  'OUT_FOR_DELIVERY',
+]);
 
 @Component({
   selector: 'admin-dashboard',

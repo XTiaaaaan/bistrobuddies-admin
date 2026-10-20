@@ -13,6 +13,7 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
   'CONFIRMED',
   'PREPARING',
   'READY',
+  'OUT_FOR_DELIVERY',
   'COMPLETED',
   'CANCELLED',
 ];
@@ -24,7 +25,8 @@ export const ORDER_STATUS_TRANSITIONS: Record<
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['COMPLETED', 'CANCELLED'],
+  READY: ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  OUT_FOR_DELIVERY: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -74,10 +76,12 @@ export function canTransition(current: unknown, next: unknown): boolean {
   return ORDER_STATUS_TRANSITIONS[current].includes(next);
 }
 
-/** Human readable label for an order status. */
 export function orderStatusLabel(status: unknown): string {
   if (!isOrderStatus(status)) {
     return typeof status === 'string' && status ? status : 'UNKNOWN';
+  }
+  if (status === 'OUT_FOR_DELIVERY') {
+    return 'On the Way';
   }
   return status.charAt(0) + status.slice(1).toLowerCase();
 }
@@ -92,6 +96,8 @@ export function orderStatusColor(status: unknown): string {
       return 'primary';
     case 'READY':
       return 'secondary';
+    case 'OUT_FOR_DELIVERY':
+      return 'tertiary';
     case 'COMPLETED':
       return 'success';
     case 'CANCELLED':

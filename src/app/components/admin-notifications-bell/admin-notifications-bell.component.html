@@ -1,0 +1,92 @@
+@if (authorized()) {
+  <ion-button
+    id="admin-notification-trigger"
+    fill="clear"
+    class="notification-trigger"
+    aria-label="Open administrator notifications"
+    title="Notifications"
+  >
+    <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
+    @if (unreadCount() > 0) {
+      <ion-badge color="danger" class="notification-count">
+        {{ countLabel(unreadCount()) }}
+      </ion-badge>
+    }
+  </ion-button>
+
+  <ion-popover
+    trigger="admin-notification-trigger"
+    triggerAction="click"
+    side="bottom"
+    alignment="end"
+    [dismissOnSelect]="false"
+    class="admin-notification-popover"
+  >
+    <ng-template>
+      <div class="notification-panel" role="dialog" aria-label="Administrator notifications">
+        <div class="notification-head">
+          <div>
+            <h2>Notifications</h2>
+            <p>
+              New orders and GCash proofs waiting for review.
+            </p>
+          </div>
+          @if (notifications().length > 0) {
+            <button
+              type="button"
+              class="notification-mark-all"
+              (click)="markAllRead()"
+            >
+              <ion-icon name="checkmark-done-outline" aria-hidden="true"></ion-icon>
+              Mark all read
+            </button>
+          }
+        </div>
+
+        @if (notifications().length === 0) {
+          <div class="notification-empty" role="status">
+            <ion-icon name="notifications-off-outline" aria-hidden="true"></ion-icon>
+            <p>You are all caught up.</p>
+          </div>
+        } @else {
+          <ul class="notification-list">
+            @for (notification of notifications(); track notification.id) {
+              <li>
+                <button
+                  type="button"
+                  class="notification-item"
+                  [class.notification-item--unread]="!notification.read"
+                  (click)="openNotification(notification)"
+                >
+                  <span class="notification-icon" aria-hidden="true">
+                    <ion-icon
+                      [name]="
+                        notification.kind === 'NEW_ORDER'
+                          ? 'receipt-outline'
+                          : 'card-outline'
+                      "
+                    ></ion-icon>
+                  </span>
+                  <span class="notification-copy">
+                    <span class="notification-title">
+                      {{ notification.title }}
+                      @if (!notification.read) {
+                        <span class="notification-dot" aria-label="Unread"></span>
+                      }
+                    </span>
+                    <span class="notification-message">
+                      {{ notification.message }}
+                    </span>
+                    <span class="notification-time">
+                      {{ formatTime(notification.createdAt) }}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </ng-template>
+  </ion-popover>
+}

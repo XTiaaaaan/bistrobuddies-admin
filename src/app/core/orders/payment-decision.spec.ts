@@ -29,6 +29,10 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
       accountName: 'Juan dela Cruz',
       accountNumber: '09171234567',
     },
+    paymentProof: {
+      url: 'https://example.com/proofs/order-1.jpg',
+      submittedAt: null,
+    },
     orderStatus: 'PENDING',
     createdAt: null,
     updatedAt: null,
@@ -87,6 +91,24 @@ describe('payment decision eligibility', () => {
     expect(canDecidePayment(order, 'PAID')).toBe(true);
     expect(canDecidePayment(order, 'REJECTED')).toBe(true);
     expect(paymentDecisionHint(order)).toBeNull();
+  });
+
+  it('requires an uploaded proof before approving payment', () => {
+    const order = makeOrder({ paymentProof: null });
+    expect(canConfirmPayment(order)).toBe(false);
+    expect(canDecidePayment(order, 'PAID')).toBe(false);
+    expect(canRejectPayment(order)).toBe(true);
+    expect(canDecidePayment(order, 'REJECTED')).toBe(true);
+    expect(paymentDecisionHint(order)).toMatch(/screenshot has not been uploaded/i);
+  });
+
+  it('accepts flat proof aliases for legacy submissions', () => {
+    const order = makeOrder({
+      paymentProof: null,
+      paymentProofUrl: 'https://example.com/proofs/legacy.jpg',
+    });
+    expect(canConfirmPayment(order)).toBe(true);
+    expect(canDecidePayment(order, 'PAID')).toBe(true);
   });
 
   it('hides actions while GCash details are missing', () => {

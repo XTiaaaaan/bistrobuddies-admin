@@ -22,6 +22,7 @@ import {
 } from 'ionicons/icons';
 
 import { AdminSessionService } from './core/auth/admin-session.service';
+import { AdminNotificationsBellComponent } from './components/admin-notifications-bell/admin-notifications-bell.component';
 
 @Component({
   selector: 'admin-root',
@@ -39,6 +40,7 @@ import { AdminSessionService } from './core/auth/admin-session.service';
     IonButton,
     IonIcon,
     IonRouterOutlet,
+    AdminNotificationsBellComponent,
   ],
 })
 export class AdminAppComponent implements OnInit {
