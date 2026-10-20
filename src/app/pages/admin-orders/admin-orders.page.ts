@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject, switchMap } from 'rxjs';
 import {
   AlertController,
@@ -41,13 +42,15 @@ import {
 } from '@shared/core/orders/order-filter';
 import {
   ORDER_STATUSES,
-  allowedNextStatuses,
-  canTransition,
   isCancelledOrder,
-  isOrderStatus,
   orderStatusColor,
   orderStatusLabel,
 } from '@shared/core/orders/order-status';
+import {
+  allowedNextOrderStatuses,
+  canTransitionOrder,
+  resolveFulfillmentType,
+} from '@shared/core/orders/order-fulfillment';
 import {
   canConfirmPayment,
   canDecidePayment,
@@ -164,6 +167,8 @@ export class AdminOrdersPage implements OnInit {
   readonly paymentStatusFilter = signal('ALL');
   readonly paymentMethodFilter = signal('ALL');
   readonly dateRangeFilter = signal<OrderDateRange>('ALL');
+  /** Order opened from a notification deep link (`/orders?order=…`). */
+  readonly focusedOrderId = signal<string | null>(null);
 
   readonly criteria = computed<OrderFilterCriteria>(() => ({
     search: this.search(),
@@ -209,12 +214,17 @@ export class AdminOrdersPage implements OnInit {
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   constructor() {
     addIcons({ alertCircle, receipt, refresh, shieldCheckmarkOutline });
   }
 
   ngOnInit(): void {
+    this.route?.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.focusOrder(params.get('order')));
+
     this.reload$
       .pipe(
         switchMap(() => this.ordersService.watchOrders()),
@@ -224,6 +234,9 @@ export class AdminOrdersPage implements OnInit {
         next: (orders) => {
           this.orders.set(orders);
           this.status.set('ready');
+          if (this.focusedOrderId()) {
+            this.scrollToFocusedOrder();
+          }
         },
         error: () => {
           this.errorMessage.set(
@@ -232,6 +245,39 @@ export class AdminOrdersPage implements OnInit {
           this.status.set('error');
         },
       });
+  }
+
+  /**
+   * Opens one order in the list (used by notification clicks). The search is
+   * narrowed to the exact order id so its full card is visible regardless of
+   * any filters that were active before the alert was clicked.
+   */
+  focusOrder(orderId: string | null): void {
+    const id = orderId?.trim() ?? '';
+    if (!id) {
+      this.focusedOrderId.set(null);
+      return;
+    }
+    this.focusedOrderId.set(id);
+    this.search.set(id);
+    this.statusFilter.set(EMPTY_ORDER_FILTER.orderStatus);
+    this.paymentStatusFilter.set(EMPTY_ORDER_FILTER.paymentStatus);
+    this.paymentMethodFilter.set(EMPTY_ORDER_FILTER.paymentMethod);
+    this.dateRangeFilter.set(EMPTY_ORDER_FILTER.dateRange);
+    this.scrollToFocusedOrder();
+  }
+
+  private scrollToFocusedOrder(): void {
+    const id = this.focusedOrderId();
+    if (!id) {
+      return;
+    }
+    setTimeout(() => {
+      const element = document.getElementById(`order-card-${id}`);
+      if (typeof element?.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   }
 
   reload(): void {
@@ -246,6 +292,7 @@ export class AdminOrdersPage implements OnInit {
     this.paymentStatusFilter.set(EMPTY_ORDER_FILTER.paymentStatus);
     this.paymentMethodFilter.set(EMPTY_ORDER_FILTER.paymentMethod);
     this.dateRangeFilter.set(EMPTY_ORDER_FILTER.dateRange);
+    this.focusedOrderId.set(null);
   }
 
   onSearch(value: string): void {
@@ -311,9 +358,24 @@ export class AdminOrdersPage implements OnInit {
     return isCancelledOrder(order.orderStatus);
   }
 
-  /** Statuses the backend will accept for this order right now. */
+  /**
+   * Statuses the backend will accept for this order right now, filtered by
+   * fulfilment mode so pickup orders never offer On the Way.
+   */
   allowedNext(order: Order): OrderStatus[] {
-    return allowedNextStatuses(order.orderStatus);
+    return allowedNextOrderStatuses(order);
+  }
+
+  /** Whether this order is a delivery order that can be dispatched now. */
+  canDispatch(order: Order): boolean {
+    return order.orderStatus === 'READY' && this.allowedNext(order).includes(
+      'OUT_FOR_DELIVERY'
+    );
+  }
+
+  /** Fulfilment mode shown on the card ("Delivery" or "Pickup"). */
+  fulfillmentLabel(order: Order): string {
+    return resolveFulfillmentType(order) === 'DELIVERY' ? 'Delivery' : 'Pickup';
   }
 
   async requestStatusChange(order: Order, next: OrderStatus): Promise<void> {
@@ -323,18 +385,20 @@ export class AdminOrdersPage implements OnInit {
       await this.showError(CANCELLED_ORDER_MESSAGE);
       return;
     }
-    if (!canTransition(order.orderStatus, next)) {
+    if (!canTransitionOrder(order, next)) {
       await this.showError(
-        `Order status cannot move from ${String(order.orderStatus)} to ${next}.`
+        `Order status cannot move from ${this.statusLabel(
+          order.orderStatus
+        )} to ${this.statusLabel(next)}.`
       );
       return;
     }
 
     const alert = await this.alertCtrl.create({
       header: 'Change order status?',
-      message: `Order ${shortId(order.id)} moves from ${String(
+      message: `Order ${shortId(order.id)} moves from ${this.statusLabel(
         order.orderStatus
-      )} to ${next}.`,
+      )} to ${this.statusLabel(next)}.`,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
@@ -360,11 +424,19 @@ export class AdminOrdersPage implements OnInit {
       await this.showError(CANCELLED_ORDER_MESSAGE);
       return;
     }
+    if (!canTransitionOrder(order, next)) {
+      await this.showError(
+        `Order status cannot move from ${this.statusLabel(
+          order.orderStatus
+        )} to ${this.statusLabel(next)}.`
+      );
+      return;
+    }
     this.busyId.set(order.id);
     try {
       await this.adminApi.updateOrderStatus(order.id, next);
       const toast = await this.toastCtrl.create({
-        message: `Order status updated to ${next}.`,
+        message: `Order status updated to ${this.statusLabel(next)}.`,
         duration: 2500,
         color: 'success',
       });

@@ -190,7 +190,9 @@
         @for (order of visibleOrders(); track order.id) {
           <ion-card
             class="order-card"
+            [id]="'order-card-' + order.id"
             [class.order-card--cancelled]="isCancelled(order)"
+            [class.order-card--focused]="focusedOrderId() === order.id"
           >
             <div class="order-head">
               <div class="order-id">
@@ -209,6 +211,9 @@
                 </ion-badge>
                 <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
                   {{ order.paymentMethod }}
+                </ion-badge>
+                <ion-badge color="tertiary">
+                  {{ fulfillmentLabel(order) }}
                 </ion-badge>
                 @if (showsRefundStatus(order)) {
                   <ion-badge [color]="refundColor(refundStatus(order))">

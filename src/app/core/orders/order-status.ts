@@ -13,10 +13,15 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
   'CONFIRMED',
   'PREPARING',
   'READY',
+  'OUT_FOR_DELIVERY',
   'COMPLETED',
   'CANCELLED',
 ];
 
+/**
+ * Mirrors the backend graph. `OUT_FOR_DELIVERY` is only reachable from
+ * `READY`; pickup orders skip it (see `order-fulfillment.ts`).
+ */
 export const ORDER_STATUS_TRANSITIONS: Record<
   OrderStatus,
   readonly OrderStatus[]
@@ -24,7 +29,8 @@ export const ORDER_STATUS_TRANSITIONS: Record<
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['COMPLETED', 'CANCELLED'],
+  READY: ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  OUT_FOR_DELIVERY: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -74,10 +80,17 @@ export function canTransition(current: unknown, next: unknown): boolean {
   return ORDER_STATUS_TRANSITIONS[current].includes(next);
 }
 
-/** Human readable label for an order status. */
+/**
+ * Human readable label for an order status. The internal stored value
+ * `OUT_FOR_DELIVERY` is shown as "On the Way" exactly as the backend's
+ * `orderStatusLabel` does; every other value keeps the previous formatting.
+ */
 export function orderStatusLabel(status: unknown): string {
   if (!isOrderStatus(status)) {
     return typeof status === 'string' && status ? status : 'UNKNOWN';
+  }
+  if (status === 'OUT_FOR_DELIVERY') {
+    return 'On the Way';
   }
   return status.charAt(0) + status.slice(1).toLowerCase();
 }
@@ -92,6 +105,8 @@ export function orderStatusColor(status: unknown): string {
       return 'primary';
     case 'READY':
       return 'secondary';
+    case 'OUT_FOR_DELIVERY':
+      return 'info';
     case 'COMPLETED':
       return 'success';
     case 'CANCELLED':

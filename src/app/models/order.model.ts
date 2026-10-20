@@ -6,6 +6,7 @@ export type OrderStatus =
   | 'CONFIRMED'
   | 'PREPARING'
   | 'READY'
+  | 'OUT_FOR_DELIVERY'
   | 'COMPLETED'
   | 'CANCELLED';
 
@@ -151,6 +152,12 @@ export interface Order {
   customerId: string;
   customerSnapshot: OrderCustomerSnapshot | null;
   addressSnapshot: OrderAddressSnapshot | null;
+  /**
+   * Fulfilment mode written by newer order documents. Historic documents
+   * predate it; `resolveFulfillmentType` falls back to whether a delivery
+   * address was captured.
+   */
+  fulfillmentType?: string | null;
   items: OrderItemSnapshot[];
   subtotal: number;
   deliveryFee: number;

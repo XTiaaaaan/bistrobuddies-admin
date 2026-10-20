@@ -112,6 +112,12 @@
   box-shadow: var(--bb-shadow-raised);
 }
 
+/* Deep-linked from a notification: make the matching order unmistakable. */
+.order-card--focused {
+  border-color: var(--bb-coffee);
+  box-shadow: 0 0 0 3px var(--bb-warning-soft-bg), var(--bb-shadow-raised);
+}
+
 .order-head {
   display: flex;
   flex-wrap: wrap;

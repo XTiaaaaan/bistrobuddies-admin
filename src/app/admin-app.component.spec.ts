@@ -14,6 +14,7 @@ describe('AdminAppComponent navigation', () => {
           provide: AdminSessionService,
           useValue: {
             signedIn$: new BehaviorSubject(signedIn),
+            profile$: new BehaviorSubject(null),
             logout: vi.fn().mockResolvedValue(undefined),
           },
         },

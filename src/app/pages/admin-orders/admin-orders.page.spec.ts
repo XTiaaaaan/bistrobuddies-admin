@@ -543,6 +543,108 @@ describe('AdminOrdersPage GCash payment verification', () => {
     request.flush({ id: 'order-1', orderStatus: 'CONFIRMED' });
     await waitFor(() => page.busyId() === null);
   });
+
+  it('offers and sends OUT_FOR_DELIVERY for a ready delivery order', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'delivery-1',
+        orderStatus: 'READY',
+        fulfillmentType: 'DELIVERY',
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.fulfillmentLabel(order)).toBe('Delivery');
+    expect(page.allowedNext(order)).toEqual([
+      'OUT_FOR_DELIVERY',
+      'COMPLETED',
+      'CANCELLED',
+    ]);
+    expect(page.canDispatch(order)).toBe(true);
+    expect(page.statusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
+
+    await page.requestStatusChange(order, 'OUT_FOR_DELIVERY');
+    expect(lastAlertOptions?.message).toMatch(/to On the Way/i);
+    confirmButton().handler?.();
+
+    const request = await waitForRequest(httpMock, statusUrl('delivery-1'));
+    // The backend contract value is unchanged; the UI only renames it.
+    expect(request.request.body).toEqual({ orderStatus: 'OUT_FOR_DELIVERY' });
+    expect(JSON.stringify(request.request.body)).not.toContain('payment');
+
+    request.flush({ id: 'delivery-1', orderStatus: 'OUT_FOR_DELIVERY' });
+    await waitFor(() => page.busyId() === null);
+  });
+
+  it('never forces a pickup order through OUT_FOR_DELIVERY', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'pickup-1',
+        orderStatus: 'READY',
+        fulfillmentType: 'PICKUP',
+        addressSnapshot: null,
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.fulfillmentLabel(order)).toBe('Pickup');
+    expect(page.allowedNext(order)).toEqual(['COMPLETED', 'CANCELLED']);
+    expect(page.allowedNext(order)).not.toContain('OUT_FOR_DELIVERY');
+    expect(page.canDispatch(order)).toBe(false);
+
+    await page.requestStatusChange(order, 'OUT_FOR_DELIVERY');
+    expect(alertCreate).not.toHaveBeenCalled();
+    await tick();
+    httpMock.expectNone((req) => req.url === statusUrl('pickup-1'));
+    expect(toastCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ color: 'danger' })
+    );
+  });
+
+  it('completes an order that is already On the Way', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'on-the-way-1',
+        orderStatus: 'OUT_FOR_DELIVERY',
+        fulfillmentType: 'DELIVERY',
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.statusLabel(order.orderStatus)).toBe('On the Way');
+    expect(page.statusColor(order.orderStatus)).toBe('info');
+    expect(page.fulfillmentLabel(order)).toBe('Delivery');
+    expect(page.allowedNext(order)).toEqual(['COMPLETED', 'CANCELLED']);
+
+    await page.requestStatusChange(order, 'COMPLETED');
+    confirmButton().handler?.();
+
+    const request = await waitForRequest(httpMock, statusUrl('on-the-way-1'));
+    expect(request.request.body).toEqual({ orderStatus: 'COMPLETED' });
+    request.flush({ id: 'on-the-way-1', orderStatus: 'COMPLETED' });
+    await waitFor(() => page.busyId() === null);
+  });
+
+  it('focuses the order named by a notification deep link', async () => {
+    ordersSubject.next([
+      makeOrder({ id: 'focus-1' }),
+      makeOrder({ id: 'focus-2', orderStatus: 'CONFIRMED' }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    page.focusOrder('focus-1');
+
+    expect(page.focusedOrderId()).toBe('focus-1');
+    expect(page.search()).toBe('focus-1');
+    expect(page.statusFilter()).toBe('ALL');
+    expect(page.visibleOrders().map((order) => order.id)).toEqual(['focus-1']);
+
+    page.clearFilters();
+    expect(page.focusedOrderId()).toBeNull();
+  });
 });
 
 describe('AdminOrdersPage cancelled orders', () => {
