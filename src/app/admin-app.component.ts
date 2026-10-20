@@ -22,6 +22,7 @@ import {
 } from 'ionicons/icons';
 
 import { AdminSessionService } from './core/auth/admin-session.service';
+import { AdminNotificationsBellComponent } from './components/admin-notifications-bell/admin-notifications-bell.component';
 
 @Component({
   selector: 'admin-root',
@@ -39,10 +40,12 @@ import { AdminSessionService } from './core/auth/admin-session.service';
     IonButton,
     IonIcon,
     IonRouterOutlet,
+    AdminNotificationsBellComponent,
   ],
 })
 export class AdminAppComponent implements OnInit {
   readonly signedIn = signal(false);
+  readonly isAdmin = signal(false);
   readonly onLogin = signal(false);
 
   private readonly router = inject(Router);
@@ -64,6 +67,12 @@ export class AdminAppComponent implements OnInit {
     this.session.signedIn$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((signedIn) => this.signedIn.set(signedIn));
+
+    // Alerts are mounted only for a profile the server-side/Firestore role
+    // check confirms as administrator.
+    this.session.profile$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((profile) => this.isAdmin.set(profile?.role === 'admin'));
 
     this.onLogin.set(this.router.url.startsWith('/login'));
     this.router.events

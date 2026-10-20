@@ -1,0 +1,219 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bell-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  position: relative;
+}
+
+.bell-count {
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--bb-espresso);
+  border-radius: var(--bb-radius-pill);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.notifications-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(20, 15, 12, 0.32);
+}
+
+.notifications-panel {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(70vh, 560px);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border-strong);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-raised);
+  overflow: hidden;
+}
+
+.notifications-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bb-space-3);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-espresso);
+  color: #ffffff;
+}
+
+.notifications-head h2 {
+  margin: 0;
+  color: #ffffff;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.notifications-count {
+  margin: 3px 0 0;
+  color: var(--bb-tan);
+  font-size: 12px;
+}
+
+.notifications-action {
+  padding: 5px 9px;
+  border: 1px solid rgba(230, 213, 192, 0.45);
+  border-radius: var(--bb-radius-pill);
+  background: transparent;
+  color: #f0e4d6;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notifications-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.notifications-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.notifications-list li + li {
+  border-top: 1px solid var(--bb-border);
+}
+
+.notification-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--bb-space-2);
+  width: 100%;
+  padding: var(--bb-space-3) var(--bb-space-4);
+  border: 0;
+  background: var(--bb-surface);
+  color: var(--bb-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.notification-item:hover,
+.notification-item:focus-visible {
+  background: var(--bb-surface-sunken);
+}
+
+.notification-item--unread {
+  background: rgba(212, 169, 106, 0.12);
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.notification-dot--unread {
+  background: var(--bb-coffee);
+}
+
+.notification-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bb-espresso);
+}
+
+.notification-body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--bb-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.notification-time {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--bb-text-soft);
+}
+
+.notification-kind {
+  padding: 2px 7px;
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-neutral-soft-bg);
+  color: var(--bb-neutral-soft-text);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.notifications-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bb-space-2);
+  padding: var(--bb-space-5) var(--bb-space-4);
+  color: var(--bb-text-muted);
+  text-align: center;
+}
+
+.notifications-empty ion-icon {
+  font-size: 34px;
+  color: var(--bb-coffee);
+}
+
+.notifications-empty p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notifications-foot {
+  margin: 0;
+  padding: var(--bb-space-2) var(--bb-space-4);
+  border-top: 1px solid var(--bb-border);
+  background: var(--bb-surface-sunken);
+  color: var(--bb-text-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .notifications-panel {
+    top: 56px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+  }
+}

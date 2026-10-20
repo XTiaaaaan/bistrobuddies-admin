@@ -16,6 +16,7 @@ describe('order status helpers', () => {
       'CONFIRMED',
       'PREPARING',
       'READY',
+      'OUT_FOR_DELIVERY',
       'COMPLETED',
       'CANCELLED',
     ]);
@@ -25,14 +26,30 @@ describe('order status helpers', () => {
       'CANCELLED',
     ]);
     expect(ORDER_STATUS_TRANSITIONS.PREPARING).toEqual(['READY', 'CANCELLED']);
-    expect(ORDER_STATUS_TRANSITIONS.READY).toEqual(['COMPLETED', 'CANCELLED']);
+    expect(ORDER_STATUS_TRANSITIONS.READY).toEqual([
+      'OUT_FOR_DELIVERY',
+      'COMPLETED',
+      'CANCELLED',
+    ]);
+    expect(ORDER_STATUS_TRANSITIONS.OUT_FOR_DELIVERY).toEqual([
+      'COMPLETED',
+      'CANCELLED',
+    ]);
     expect(ORDER_STATUS_TRANSITIONS.COMPLETED).toEqual([]);
     expect(ORDER_STATUS_TRANSITIONS.CANCELLED).toEqual([]);
   });
 
   it('only offers transitions the backend accepts', () => {
     expect(allowedNextStatuses('PENDING')).toEqual(['CONFIRMED', 'CANCELLED']);
-    expect(allowedNextStatuses('READY')).toEqual(['COMPLETED', 'CANCELLED']);
+    expect(allowedNextStatuses('READY')).toEqual([
+      'OUT_FOR_DELIVERY',
+      'COMPLETED',
+      'CANCELLED',
+    ]);
+    expect(allowedNextStatuses('OUT_FOR_DELIVERY')).toEqual([
+      'COMPLETED',
+      'CANCELLED',
+    ]);
     expect(allowedNextStatuses('COMPLETED')).toEqual([]);
     expect(allowedNextStatuses('CANCELLED')).toEqual([]);
     expect(allowedNextStatuses('NOT_A_STATUS')).toEqual([]);
@@ -44,6 +61,9 @@ describe('order status helpers', () => {
     expect(canTransition('PENDING', 'CANCELLED')).toBe(true);
     expect(canTransition('PENDING', 'COMPLETED')).toBe(false);
     expect(canTransition('PENDING', 'PREPARING')).toBe(false);
+    expect(canTransition('PREPARING', 'OUT_FOR_DELIVERY')).toBe(false);
+    expect(canTransition('READY', 'OUT_FOR_DELIVERY')).toBe(true);
+    expect(canTransition('OUT_FOR_DELIVERY', 'COMPLETED')).toBe(true);
     expect(canTransition('COMPLETED', 'PENDING')).toBe(false);
     expect(canTransition('CANCELLED', 'READY')).toBe(false);
     expect(canTransition('BOGUS', 'PENDING')).toBe(false);
@@ -57,6 +77,8 @@ describe('order status helpers', () => {
 
   it('recognizes known statuses only', () => {
     expect(isOrderStatus('READY')).toBe(true);
+    expect(isOrderStatus('OUT_FOR_DELIVERY')).toBe(true);
+    expect(isOrderStatus('ON_THE_WAY')).toBe(false);
     expect(isOrderStatus('ready')).toBe(false);
     expect(isOrderStatus(7)).toBe(false);
   });
@@ -78,6 +100,7 @@ describe('order status helpers', () => {
       'CONFIRMED',
       'PREPARING',
       'READY',
+      'OUT_FOR_DELIVERY',
       'COMPLETED',
     ]) {
       expect(canTransition('CANCELLED', next)).toBe(false);
@@ -86,9 +109,11 @@ describe('order status helpers', () => {
 
   it('labels and colors statuses for display', () => {
     expect(orderStatusLabel('PENDING')).toBe('Pending');
+    expect(orderStatusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
     expect(orderStatusLabel('CANCELLED')).toBe('Cancelled');
     expect(orderStatusLabel('SOMETHING_ELSE')).toBe('SOMETHING_ELSE');
     expect(orderStatusColor('PENDING')).toBe('warning');
+    expect(orderStatusColor('OUT_FOR_DELIVERY')).toBe('info');
     expect(orderStatusColor('COMPLETED')).toBe('success');
     // Cancelled uses a muted (not alert) color.
     expect(orderStatusColor('CANCELLED')).toBe('medium');

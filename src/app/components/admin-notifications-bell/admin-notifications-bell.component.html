@@ -1,0 +1,97 @@
+<div class="notification-bell">
+  <ion-button
+    fill="clear"
+    class="bell-button"
+    aria-haspopup="dialog"
+    [attr.aria-label]="unreadLabel()"
+    [attr.aria-expanded]="alerts.panelOpen()"
+    (click)="toggle()"
+  >
+    <ion-icon
+      slot="icon-only"
+      [name]="
+        alerts.unreadCount() > 0 ? 'notifications' : 'notifications-outline'
+      "
+    ></ion-icon>
+    @if (alerts.unreadCount() > 0) {
+      <ion-badge color="danger" class="bell-count" aria-hidden="true">
+        {{ alerts.unreadCount() > 99 ? '99+' : alerts.unreadCount() }}
+      </ion-badge>
+    }
+  </ion-button>
+
+  @if (alerts.panelOpen()) {
+    <div
+      class="notifications-backdrop"
+      aria-hidden="true"
+      (click)="close()"
+    ></div>
+
+    <section
+      class="notifications-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Notifications"
+    >
+      <header class="notifications-head">
+        <div>
+          <h2>Notifications</h2>
+          <p class="notifications-count" aria-live="polite">
+            {{ alerts.unreadCount() }}
+            {{ alerts.unreadCount() === 1 ? 'unread alert' : 'unread alerts' }}
+          </p>
+        </div>
+        @if (alerts.unreadCount() > 0) {
+          <button
+            type="button"
+            class="notifications-action"
+            (click)="markAllRead()"
+          >
+            Mark all read
+          </button>
+        }
+      </header>
+
+      @if (alerts.notifications().length === 0) {
+        <div class="notifications-empty" role="status">
+          <ion-icon name="notifications-off-outline" aria-hidden="true"></ion-icon>
+          <p>No alerts yet. New orders and GCash proofs will appear here.</p>
+        </div>
+      } @else {
+        <ul class="notifications-list">
+          @for (item of alerts.notifications(); track item.id) {
+            <li>
+              <button
+                type="button"
+                class="notification-item"
+                [class.notification-item--unread]="!item.read"
+                (click)="openNotification(item)"
+              >
+                <span
+                  class="notification-dot"
+                  [class.notification-dot--unread]="!item.read"
+                  aria-hidden="true"
+                ></span>
+                <span class="notification-copy">
+                  <span class="notification-title">{{ item.title }}</span>
+                  <span class="notification-body">{{ item.body }}</span>
+                  <span class="notification-time">
+                    {{ timeLabel(item.createdAt) }}
+                  </span>
+                </span>
+                <span class="notification-kind">
+                  {{ alerts.kindLabel(item.kind) }}
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <p class="notifications-foot">
+        Open an alert to jump to its order. Payment status stays separate from
+        the order status.
+      </p>
+    </section>
+  }
+</div>
