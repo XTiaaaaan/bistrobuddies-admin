@@ -1,15 +1,39 @@
+/*
+ * Product form — two columns on desktop: the wide "main" column carries the
+ * item's identity (details, pricing) while the narrower "side" column holds
+ * availability, imagery and modifiers. Everything stacks in a single column
+ * below 900px. Fields and controls are the shared `--bb-*` surfaces.
+ */
+
 .product-form {
-  max-width: 760px;
+  max-width: 1100px;
+}
+
+.form-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--bb-space-5);
+  align-items: start;
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .form-panel {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-card);
   box-shadow: var(--bb-shadow-card);
   padding: var(--bb-space-5);
   margin-bottom: var(--bb-space-4);
   box-sizing: border-box;
+}
+
+.form-column .form-panel:last-child {
+  margin-bottom: 0;
 }
 
 .form-panel h2 {
@@ -35,7 +59,7 @@
 }
 
 .form-list ion-item:focus-within {
-  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
+  box-shadow: var(--bb-focus-ring);
 }
 
 .form-list ion-textarea {
@@ -63,12 +87,18 @@
   color: var(--bb-text-muted);
 }
 
+/* ── Availability ── */
+
+.form-panel--availability .form-list ion-item {
+  --background: var(--bb-surface-sunken);
+  margin-bottom: 0;
+}
+
 /* ── Image upload ── */
 
 .upload-zone {
   margin-top: var(--bb-space-3);
   padding: var(--bb-space-4);
-  max-width: 480px;
   border: 1.5px dashed var(--bb-border-strong);
   border-radius: var(--bb-radius-md);
   background: var(--bb-surface-sunken);
@@ -115,7 +145,6 @@
 .image-preview {
   margin-top: var(--bb-space-4);
   width: 100%;
-  max-width: 280px;
   aspect-ratio: 4 / 3;
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-md);
@@ -149,9 +178,11 @@
   color: var(--bb-coffee);
 }
 
-.admin-notice {
+.form-panel .admin-notice {
   margin: var(--bb-space-3) 0 0;
 }
+
+/* ── Sugar chips ── */
 
 .sugar-chips {
   display: flex;
@@ -165,6 +196,7 @@
   --border-color: var(--bb-border-strong);
   --color: var(--bb-text-muted);
   height: 36px;
+  margin: 0;
   padding: 0 14px;
   font-size: 13px;
 }
@@ -181,12 +213,14 @@
   --background-hover: var(--bb-surface-sunken);
 }
 
+/* ── Actions ── */
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--bb-space-3);
   flex-wrap: wrap;
-  margin-top: var(--bb-space-1);
+  margin-top: var(--bb-space-5);
 }
 
 .form-actions ion-button {
@@ -204,6 +238,17 @@
   --border-color: var(--bb-border-strong);
 }
 
+@media (max-width: 900px) {
+  .form-columns {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .form-column .form-panel:last-child {
+    margin-bottom: var(--bb-space-4);
+  }
+}
+
 @media (max-width: 600px) {
   .form-panel {
     padding: var(--bb-space-4);
@@ -219,9 +264,5 @@
 
   .form-actions ion-button {
     flex: 1 1 auto;
-  }
-
-  .image-preview {
-    max-width: 100%;
   }
 }

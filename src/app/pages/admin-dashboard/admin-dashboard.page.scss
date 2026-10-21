@@ -1,39 +1,28 @@
-/* ── Section layout ── */
+/*
+ * Dashboard — metric cards, collected-revenue analytics and quick actions.
+ * Layout is chosen per section: comparable metric cards share equal widths
+ * and heights, while the financial breakdown keeps its own reading rhythm.
+ */
 
 .stat-section {
-  margin-bottom: var(--bb-space-5);
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--bb-space-3);
-  margin-bottom: var(--bb-space-3);
+  margin-bottom: var(--bb-space-6);
 }
 
 .section-head h2 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  color: var(--bb-espresso);
+  letter-spacing: -0.01em;
 }
 
-.section-meta {
-  font-size: 13px;
-  color: var(--bb-text-muted);
-}
-
-/* "Updates live" reads as a quiet pill with a soft green pulse dot. */
+/* "Updates live" reads as a quiet pill with a soft green dot. */
 .section-meta--live {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 4px 12px;
+  border: 1px solid var(--bb-success-border);
   border-radius: var(--bb-radius-pill);
   background: var(--bb-success-soft-bg);
   color: var(--bb-success-soft-text);
-  font-size: 12px;
+  font-size: var(--bb-text-sm);
   font-weight: 600;
 }
 
@@ -54,7 +43,7 @@
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-card);
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   color: var(--bb-text-muted);
 }
 
@@ -65,7 +54,7 @@
 }
 
 .section-note {
-  margin: -8px 0 var(--bb-space-4);
+  margin: calc(var(--bb-space-2) * -1) 0 var(--bb-space-4);
   font-size: 13px;
   color: var(--bb-text-muted);
 }
@@ -76,7 +65,7 @@
   margin-bottom: var(--bb-space-2);
   padding: var(--bb-space-4);
   background: var(--bb-warning-soft-bg);
-  border: 1px solid rgba(166, 123, 91, 0.32);
+  border: 1px solid var(--bb-warning-border);
   border-radius: var(--bb-radius-card);
 }
 
@@ -85,8 +74,7 @@
   align-items: center;
   gap: var(--bb-space-2);
   margin: 0 0 var(--bb-space-2);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   font-weight: 700;
   color: var(--bb-warning-soft-text);
 }
@@ -101,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   line-height: 1.5;
   color: var(--bb-text);
 }
@@ -111,16 +99,16 @@
   font-weight: 700;
 }
 
-/* ── Stat grid and cards ──
+/* ── Metric cards ──
  *
- * Metric cards read left to right: a tinted icon tile, then the number and
- * its label stacked beside it. Values keep their original calculations —
- * this is a presentation change only.
+ * Six comparable order cards arrange as two balanced rows of three on wide
+ * screens, then 2-up and 1-up as the viewport narrows. Values keep their
+ * original calculations — this is presentation only.
  */
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--bb-space-4);
   margin-bottom: var(--bb-space-5);
 }
@@ -131,7 +119,7 @@
   align-items: center;
   gap: var(--bb-space-4);
   height: 100%;
-  padding: var(--bb-space-4);
+  padding: 18px;
   text-align: left;
   transition:
     box-shadow var(--bb-motion-fast) var(--bb-ease),
@@ -171,18 +159,19 @@
 }
 
 .stat-value {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 30px;
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-2xl);
   font-weight: 600;
   line-height: 1.1;
   color: var(--bb-espresso);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: var(--bb-text-sm);
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--bb-text-muted);
 }
@@ -191,8 +180,7 @@
   background: var(--bb-success-soft-bg);
 }
 
-.stat-available .stat-icon ion-icon,
-.stat-available .stat-value {
+.stat-available .stat-icon ion-icon {
   color: var(--bb-success);
 }
 
@@ -200,8 +188,7 @@
   background: var(--bb-danger-soft-bg);
 }
 
-.stat-unavailable .stat-icon ion-icon,
-.stat-unavailable .stat-value {
+.stat-unavailable .stat-icon ion-icon {
   color: var(--bb-danger);
 }
 
@@ -217,15 +204,14 @@
 
 /* GCash cards light up only when there is something to verify. */
 .stat-card.stat-attention {
-  border-color: rgba(166, 123, 91, 0.45);
+  border-color: var(--bb-warning-border);
 }
 
 .stat-attention .stat-icon {
   background: var(--bb-warning-soft-bg);
 }
 
-.stat-attention .stat-icon ion-icon,
-.stat-attention .stat-value {
+.stat-attention .stat-icon ion-icon {
   color: var(--bb-warning-soft-text);
 }
 
@@ -251,6 +237,7 @@
 }
 
 .period-tab {
+  min-height: 32px;
   padding: 6px 14px;
   border: 0;
   border-radius: var(--bb-radius-pill);
@@ -292,14 +279,14 @@
 }
 
 .period-title {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--bb-espresso);
 }
 
 .period-range {
-  font-size: 12px;
+  font-size: var(--bb-text-sm);
   color: var(--bb-text-muted);
 }
 
@@ -328,13 +315,15 @@
 .financial-note--warning {
   padding: var(--bb-space-3) var(--bb-space-4);
   background: var(--bb-warning-soft-bg);
-  border: 1px solid rgba(166, 123, 91, 0.32);
+  border: 1px solid var(--bb-warning-border);
   border-radius: var(--bb-radius-md);
   color: var(--bb-warning-soft-text);
   font-weight: 500;
 }
 
+/* The revenue summary always reads as two balanced cards. */
 .financial-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: var(--bb-space-4);
 }
 
@@ -342,8 +331,7 @@
   background: var(--bb-tan);
 }
 
-.stat-revenue .stat-icon ion-icon,
-.stat-revenue .stat-value {
+.stat-revenue .stat-icon ion-icon {
   color: var(--bb-espresso);
 }
 
@@ -365,7 +353,7 @@
 
 .breakdown-head h3 {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--bb-espresso);
@@ -399,6 +387,7 @@
   height: 8px;
   overflow: hidden;
   background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-pill);
 }
 
@@ -420,17 +409,17 @@
 
 .breakdown-count {
   color: var(--bb-text-muted);
-  font-size: 12px;
+  font-size: var(--bb-text-sm);
   text-align: right;
   white-space: nowrap;
 }
 
 /* ── Quick action tiles ── */
+
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--bb-space-4);
-  margin-bottom: var(--bb-space-5);
 }
 
 .quick-tile {
@@ -469,7 +458,7 @@
 }
 
 .quick-tile .quick-label {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 17px;
   font-weight: 600;
   color: var(--bb-espresso);
@@ -502,24 +491,31 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 700px) {
-  .stat-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+/* ── Responsive collapse ── */
+
+@media (max-width: 860px) {
+  .stat-grid--orders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .stat-grid,
+  .financial-stats {
+    grid-template-columns: 1fr;
     gap: var(--bb-space-3);
   }
 
   .stat-card {
-    gap: var(--bb-space-3);
-    padding: var(--bb-space-3);
-  }
-
-  .stat-icon {
-    width: 42px;
-    height: 42px;
+    padding: var(--bb-space-4);
   }
 
   .stat-value {
-    font-size: 26px;
+    font-size: var(--bb-text-xl);
   }
 
   .financial-toolbar {
@@ -542,6 +538,10 @@
 
   .breakdown-count {
     display: none;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
   }
 
   .quick-tile {

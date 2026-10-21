@@ -1,9 +1,9 @@
 /*
- * BistroBuddies Admin Web — global styles
+ * BistroBuddies Admin Web - global styles
  *
  * One shared espresso/caramel/cream theme, mirroring the customer app
- * (../bistrobuddies-mobile). All colors, radii, shadows and motion values
- * come from the `--bb-*` tokens declared in src/theme/variables.scss.
+ * (../bistrobuddies-mobile). All colors, type, spacing, radii, shadows and
+ * motion values come from the `--bb-*` tokens in src/theme/variables.scss.
  */
 
 /* Core CSS required for Ionic components to work properly */
@@ -28,13 +28,14 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-base);
+  line-height: var(--bb-leading-normal);
   background:
     radial-gradient(
-      1100px 480px at 50% -120px,
-      rgba(230, 213, 192, 0.6),
-      transparent 70%
+      1100px 460px at 50% -140px,
+      rgba(230, 213, 192, 0.52),
+      transparent 68%
     ),
     var(--admin-bg);
   color: var(--bb-text);
@@ -43,27 +44,50 @@ body {
 }
 
 /*
- * Typography — serif headings echo the BistroBuddies wordmark, body text
- * stays a clean system stack for readability in tables and forms.
+ * Typography - serif display type echoes the BistroBuddies wordmark. Section
+ * labels and table headings stay in the clean system stack so dense admin
+ * screens remain easy to scan.
  */
 h1,
 h2,
-h3,
-.admin-page-header h1,
-.ion-page h1 {
-  font-family: Georgia, 'Times New Roman', serif;
+.admin-page-header h1 {
+  margin-top: 0;
+  font-family: var(--bb-font-display);
   color: var(--bb-espresso);
+  letter-spacing: -0.01em;
+}
+
+h3,
+h4 {
+  font-family: var(--bb-font-body);
 }
 
 ion-title {
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
+}
+
+a {
+  color: var(--bb-espresso);
 }
 
 /* Keyboard users get the same clarity as touch users. */
 :focus-visible {
-  outline: 2px solid var(--bb-caramel);
+  outline: 2px solid var(--bb-focus-color);
   outline-offset: 2px;
+}
+
+/* Shared accessibility helper. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /*
@@ -82,8 +106,7 @@ ion-content {
  * first ~100px of every page. Making `ion-app` a column flex container and
  * `.admin-body` a relative flex row puts the routed page below the header
  * while leaving room for the navigation: a left sidebar on wide screens and
- * a horizontal strip under the header on narrower ones. The outlet stays a
- * relative flex item so `.ion-page` keeps its usual absolute positioning.
+ * a horizontal strip under the header on narrower ones.
  */
 ion-app {
   display: flex;
@@ -110,17 +133,18 @@ ion-app > ion-header {
   min-height: 0;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Header — espresso toolbar, circular logo badge and serif wordmark,
- * matching the brand heroes of the customer app.
- * ───────────────────────────────────────────────────────────────────────── */
+/* -------------------------------------------------------------------------
+ * Header - espresso toolbar, circular logo badge and serif wordmark
+ * ------------------------------------------------------------------------- */
 
 .admin-header ion-toolbar {
   --background: var(--bb-espresso);
   --color: #ffffff;
   --padding-start: var(--bb-space-4);
   --padding-end: var(--bb-space-4);
-  --min-height: 64px;
+  --min-height: var(--bb-header-height);
+  border-bottom: 1px solid rgba(230, 213, 192, 0.16);
+  box-shadow: 0 6px 22px rgba(42, 24, 13, 0.18);
 }
 
 /*
@@ -143,13 +167,13 @@ ion-app > ion-header {
 }
 
 .admin-brand-badge {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border-radius: 50%;
   background: #ffffff;
   object-fit: contain;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .admin-brand-wordmark {
@@ -162,7 +186,7 @@ ion-app > ion-header {
 
 .admin-brand-wordmark .brand-bistro,
 .admin-brand-wordmark .brand-buddies {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 20px;
   letter-spacing: 0.2px;
 }
@@ -176,9 +200,10 @@ ion-app > ion-header {
 }
 
 .admin-brand-tag {
-  padding: 3px 8px;
+  padding: 3px 9px;
+  border: 1px solid rgba(230, 213, 192, 0.22);
   border-radius: var(--bb-radius-pill);
-  background: rgba(230, 213, 192, 0.2);
+  background: rgba(230, 213, 192, 0.14);
   color: var(--bb-tan);
   font-size: 10px;
   font-weight: 700;
@@ -186,10 +211,18 @@ ion-app > ion-header {
   text-transform: uppercase;
 }
 
+.admin-header ion-buttons {
+  gap: 2px;
+}
+
 .admin-header ion-buttons ion-button {
   --color: #f0e4d6;
-  --border-radius: 10px;
+  --border-radius: var(--bb-radius-md);
+  --padding-start: 12px;
+  --padding-end: 12px;
+  min-height: 38px;
   font-weight: 600;
+  font-size: 14px;
   transition:
     background-color var(--bb-motion-base) var(--bb-ease),
     color var(--bb-motion-base) var(--bb-ease);
@@ -201,7 +234,7 @@ ion-app > ion-header {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Navigation ────────────────────────────────────────────────────────────
+/* -- Navigation ------------------------------------------------------------
  *
  * One <nav> serves both layouts. On tablet/phone widths it is a horizontal,
  * single-line strip under the header (it scrolls sideways instead of wrapping
@@ -217,7 +250,8 @@ ion-app > ion-header {
   width: 100%;
   padding: 0 var(--bb-space-3);
   background: var(--bb-espresso);
-  border-top: 1px solid rgba(230, 213, 192, 0.16);
+  border-top: 1px solid rgba(230, 213, 192, 0.14);
+  box-shadow: var(--bb-shadow-nav);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -237,13 +271,14 @@ ion-app > ion-header {
   align-items: center;
   gap: var(--bb-space-2);
   flex-shrink: 0;
-  padding: 12px 16px;
-  color: rgba(245, 235, 224, 0.82);
+  min-height: 46px;
+  padding: 10px 16px;
+  color: rgba(245, 235, 224, 0.78);
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
-  border-bottom: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   border-radius: var(--bb-radius-sm) var(--bb-radius-sm) 0 0;
   transition:
     color var(--bb-motion-fast) var(--bb-ease),
@@ -256,7 +291,7 @@ ion-app > ion-header {
 }
 
 .admin-nav a:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
   color: #ffffff;
 }
 
@@ -266,7 +301,7 @@ ion-app > ion-header {
   border-bottom-color: var(--bb-tan);
 }
 
-/* ── Sidebar layout (desktop) ── */
+/* -- Sidebar layout (desktop) -- */
 
 @media (min-width: 1024px) {
   .admin-nav {
@@ -275,12 +310,12 @@ ion-app > ion-header {
     flex: 0 0 var(--bb-sidebar-width);
     width: var(--bb-sidebar-width);
     align-self: stretch;
-    gap: 2px;
+    gap: 3px;
     padding: var(--bb-space-4) var(--bb-space-3) var(--bb-space-5);
     background: var(--bb-surface);
     border-top: none;
     border-right: 1px solid var(--bb-border);
-    box-shadow: 4px 0 16px rgba(59, 35, 20, 0.04);
+    box-shadow: 4px 0 20px rgba(59, 35, 20, 0.035);
     overflow-x: hidden;
     overflow-y: auto;
   }
@@ -301,15 +336,26 @@ ion-app > ion-header {
 
   .admin-nav a {
     justify-content: flex-start;
-    padding: 11px var(--bb-space-3);
+    min-height: 42px;
+    padding: 10px var(--bb-space-3);
     color: var(--bb-text-muted);
     border-bottom: none;
     border-radius: var(--bb-radius-md);
   }
 
+  .admin-nav a ion-icon {
+    font-size: 19px;
+    color: var(--bb-text-soft);
+    transition: color var(--bb-motion-fast) var(--bb-ease);
+  }
+
   .admin-nav a:hover {
     background: var(--bb-surface-sunken);
     color: var(--bb-espresso);
+  }
+
+  .admin-nav a:hover ion-icon {
+    color: var(--bb-coffee);
   }
 
   .admin-nav a.active {
@@ -323,14 +369,15 @@ ion-app > ion-header {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+/* -------------------------------------------------------------------------
  * Page scaffold and shared surfaces
- * ───────────────────────────────────────────────────────────────────────── */
+ * ------------------------------------------------------------------------- */
 
 .admin-page {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--bb-content-width);
   margin: 0 auto;
-  padding: var(--bb-space-5) var(--bb-space-5) 48px;
+  padding: 28px var(--bb-space-5) 52px;
   box-sizing: border-box;
 }
 
@@ -338,25 +385,57 @@ ion-app > ion-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--bb-space-3);
+  gap: var(--bb-space-3) var(--bb-space-5);
   flex-wrap: wrap;
   margin-bottom: var(--bb-space-5);
 }
 
+.header-text {
+  min-width: 0;
+}
+
 .admin-page-header h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: var(--bb-text-2xl);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--bb-leading-tight);
 }
 
 .admin-page-sub {
   margin: var(--bb-space-1) 0 0;
-  font-size: 14px;
+  max-width: 62ch;
+  font-size: var(--bb-text-base);
   color: var(--bb-text-muted);
 }
 
-/* Cards share one surface: white, soft border, warm shadow, generous radius. */
+/* Section headings shared by the dashboard and form pages. */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bb-space-3);
+  margin-bottom: var(--bb-space-3);
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.section-meta {
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+
+.section-hint {
+  margin: var(--bb-space-2) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bb-text-muted);
+}
+
+/* Cards share one surface: white, soft border, warm shadow, calm radius. */
 .admin-card,
 ion-card {
   margin: 0;
@@ -380,7 +459,7 @@ ion-card {
   box-sizing: border-box;
 }
 
-/* ── Loading, empty and error states ── */
+/* -- Loading, empty and error states -- */
 
 .admin-state {
   display: flex;
@@ -397,12 +476,20 @@ ion-card {
 }
 
 .admin-state ion-icon {
-  font-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--bb-surface-sunken);
+  font-size: 28px;
   color: var(--bb-coffee);
 }
 
 .admin-state h3 {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--bb-espresso);
@@ -410,9 +497,9 @@ ion-card {
 
 .admin-state p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  max-width: 420px;
+  max-width: 440px;
+  font-size: var(--bb-text-base);
+  line-height: 1.55;
 }
 
 .admin-state ion-button {
@@ -420,12 +507,12 @@ ion-card {
 }
 
 .admin-state ion-spinner {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   color: var(--bb-coffee);
 }
 
-/* ── Inline banners ── */
+/* -- Inline banners -- */
 
 .admin-error,
 .admin-notice {
@@ -436,26 +523,26 @@ ion-card {
   padding: var(--bb-space-3) var(--bb-space-4);
   border-radius: var(--bb-radius-md);
   border: 1px solid transparent;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   line-height: 1.5;
 }
 
 .admin-error,
 .admin-notice--error {
   background: var(--bb-danger-soft-bg);
-  border-color: rgba(179, 58, 58, 0.25);
+  border-color: var(--bb-danger-border);
   color: var(--bb-danger-soft-text);
 }
 
 .admin-notice--success {
   background: var(--bb-success-soft-bg);
-  border-color: rgba(74, 124, 89, 0.28);
+  border-color: var(--bb-success-border);
   color: var(--bb-success-soft-text);
 }
 
 .admin-notice--info {
   background: var(--bb-warning-soft-bg);
-  border-color: rgba(166, 123, 91, 0.3);
+  border-color: var(--bb-warning-border);
   color: var(--bb-warning-soft-text);
 }
 
@@ -473,13 +560,14 @@ ion-card {
   text-decoration-thickness: 2px;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Controls — buttons, chips, badges, toggles
- * ───────────────────────────────────────────────────────────────────────── */
+/* -------------------------------------------------------------------------
+ * Controls - buttons, chips, badges, toggles
+ * ------------------------------------------------------------------------- */
 
 ion-button {
   --border-radius: var(--bb-radius-md);
   --box-shadow: none;
+  min-height: var(--bb-control-height);
   font-weight: 600;
   letter-spacing: 0.1px;
   transition:
@@ -491,11 +579,16 @@ ion-button {
 }
 
 ion-button:active:not([disabled]) {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 ion-button[fill='outline'] {
   --border-color: var(--bb-border-strong);
+  --color: var(--bb-espresso);
+  --background-hover: var(--bb-surface-sunken);
+}
+
+ion-button[fill='clear'] {
   --color: var(--bb-espresso);
 }
 
@@ -506,14 +599,42 @@ ion-button[fill='solid'] {
   --color: #ffffff;
 }
 
+ion-button[fill='solid'][color='success'],
+ion-button[color='success'][fill='solid'] {
+  --background: var(--bb-success);
+  --background-hover: #3f6b4c;
+  --background-activated: #33573d;
+}
+
+ion-button[fill='outline'][color='danger'],
+ion-button[color='danger'][fill='outline'] {
+  --border-color: var(--bb-danger-border);
+  --color: var(--bb-danger-soft-text);
+  --background-hover: var(--bb-danger-soft-bg);
+}
+
+ion-button[color='danger'][fill='solid'] {
+  --background: var(--bb-danger);
+  --background-hover: #9c3232;
+  --background-activated: #862b2b;
+  --color: #ffffff;
+}
+
 /* Small buttons keep a comfortable, still-compact touch target. */
 ion-button[size='small'] {
-  min-height: 34px;
+  min-height: var(--bb-control-height-sm);
+  font-size: 13px;
+}
+
+ion-button[disabled],
+ion-button.button-disabled {
+  opacity: 0.56;
 }
 
 ion-chip {
-  --background: rgba(166, 123, 91, 0.14);
+  --background: rgba(166, 123, 91, 0.13);
   --color: #6f4a25;
+  border: 1px solid rgba(166, 123, 91, 0.2);
   font-weight: 600;
   font-size: 12px;
 }
@@ -528,6 +649,7 @@ ion-badge {
   --padding-start: 10px;
   --padding-end: 10px;
   height: 24px;
+  border: 1px solid transparent;
   border-radius: var(--bb-radius-pill);
   font-size: 12px;
   font-weight: 700;
@@ -535,58 +657,67 @@ ion-badge {
 }
 
 ion-badge.ion-color-primary {
-  --background: rgba(59, 35, 20, 0.1);
+  --background: rgba(59, 35, 20, 0.09);
   --color: var(--bb-espresso);
+  border-color: rgba(59, 35, 20, 0.14);
 }
 
 ion-badge.ion-color-secondary {
-  --background: rgba(166, 123, 91, 0.18);
+  --background: rgba(166, 123, 91, 0.16);
   --color: #6f4a25;
+  border-color: rgba(166, 123, 91, 0.24);
 }
 
 ion-badge.ion-color-tertiary {
   --background: rgba(230, 213, 192, 0.55);
   --color: #6f4a25;
+  border-color: rgba(166, 123, 91, 0.18);
 }
 
 ion-badge.ion-color-warning {
   --background: var(--bb-warning-soft-bg);
   --color: var(--bb-warning-soft-text);
+  border-color: var(--bb-warning-border);
 }
 
 ion-badge.ion-color-success {
   --background: var(--bb-success-soft-bg);
   --color: var(--bb-success-soft-text);
+  border-color: var(--bb-success-border);
 }
 
 ion-badge.ion-color-danger {
   --background: var(--bb-danger-soft-bg);
   --color: var(--bb-danger-soft-text);
+  border-color: var(--bb-danger-border);
 }
 
 ion-badge.ion-color-info {
   --background: var(--bb-info-soft-bg);
   --color: var(--bb-info-soft-text);
+  border-color: var(--bb-info-border);
 }
 
 ion-badge.ion-color-medium {
   --background: var(--bb-neutral-soft-bg);
   --color: var(--bb-neutral-soft-text);
+  border-color: var(--bb-border);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+/* -------------------------------------------------------------------------
  * Forms and filters
- * ───────────────────────────────────────────────────────────────────────── */
+ * ------------------------------------------------------------------------- */
 
 ion-item {
   --border-radius: var(--bb-radius-sm);
+  --min-height: var(--bb-control-height);
 }
 
 ion-input,
 ion-select,
 ion-textarea {
   --placeholder-color: var(--bb-text-soft);
-  font-size: 15px;
+  font-size: var(--bb-text-md);
 }
 
 ion-searchbar {
@@ -599,13 +730,15 @@ ion-searchbar {
   --border-color: var(--bb-border-strong);
   --border-style: solid;
   --border-width: 1px;
+  --min-height: var(--bb-control-height);
+  padding: 0;
 }
 
 /* Shared search + filter toolbar (orders, products, messages). */
 .filter-bar {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(160px, 1fr));
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--bb-space-3);
   padding: var(--bb-space-3) var(--bb-space-4);
   margin-bottom: var(--bb-space-5);
@@ -616,25 +749,40 @@ ion-searchbar {
 }
 
 .filter-search {
+  flex: 2 1 300px;
   min-width: 0;
-  --padding-start: var(--bb-space-3);
 }
 
 .filter-select {
+  flex: 1 1 176px;
   min-width: 0;
-  --background: var(--bb-surface-sunken);
+  --background: var(--bb-surface);
   --border-radius: var(--bb-radius-md);
   --placeholder-color: var(--bb-text-soft);
 }
 
-.filter-clear {
-  align-self: center;
-  justify-self: start;
+.filter-select::part(container) {
+  border-color: var(--bb-border-strong);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+.filter-clear {
+  flex: 0 0 auto;
+  align-self: center;
+  --color: var(--bb-coffee);
+}
+
+/* A single-control toolbar (e.g. messages) keeps the row shallow. */
+.filter-bar--compact {
+  padding: var(--bb-space-3) var(--bb-space-4);
+}
+
+.filter-bar--compact .filter-select {
+  flex: 0 1 240px;
+}
+
+/* -------------------------------------------------------------------------
  * Tables
- * ───────────────────────────────────────────────────────────────────────── */
+ * ------------------------------------------------------------------------- */
 
 .admin-table-wrap {
   overflow-x: auto;
@@ -649,12 +797,12 @@ ion-searchbar {
   width: 100%;
   min-width: 520px;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
 }
 
 .admin-table th,
 .admin-table td {
-  padding: var(--bb-space-3);
+  padding: 13px var(--bb-space-4);
   border-bottom: 1px solid var(--bb-border);
   text-align: left;
   white-space: nowrap;
@@ -662,10 +810,10 @@ ion-searchbar {
 }
 
 .admin-table th {
-  font-size: 11px;
+  font-size: var(--bb-text-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: var(--bb-tracking-label);
   color: var(--bb-text-muted);
   background: var(--bb-surface-sunken);
   border-bottom: 1px solid var(--bb-border-strong);
@@ -697,9 +845,9 @@ ion-searchbar {
   font-variant-numeric: tabular-nums;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Feedback surfaces — alerts and toasts keep the brand voice
- * ───────────────────────────────────────────────────────────────────────── */
+/* -------------------------------------------------------------------------
+ * Feedback surfaces - alerts, toasts, modals and popovers
+ * ------------------------------------------------------------------------- */
 
 ion-toast {
   --background: var(--bb-espresso);
@@ -707,7 +855,7 @@ ion-toast {
   --border-radius: var(--bb-radius-lg);
   --box-shadow: var(--bb-shadow-raised);
   --margin: 12px;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
 }
 
 ion-alert {
@@ -719,14 +867,24 @@ ion-alert {
   --message-color: var(--bb-text-muted);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Motion — small, purposeful and always optional
- * ───────────────────────────────────────────────────────────────────────── */
+ion-modal {
+  --border-radius: var(--bb-radius-lg);
+  --box-shadow: var(--bb-shadow-raised);
+}
+
+ion-popover {
+  --box-shadow: var(--bb-shadow-raised);
+  --border-radius: var(--bb-radius-card);
+}
+
+/* -------------------------------------------------------------------------
+ * Motion - small, purposeful and always optional
+ * ------------------------------------------------------------------------- */
 
 @keyframes bb-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -744,35 +902,35 @@ ion-alert {
 }
 
 .bb-rise {
-  animation: bb-rise 0.34s var(--bb-ease) backwards;
+  animation: bb-rise 0.3s var(--bb-ease) backwards;
 }
 
 .bb-fade {
-  animation: bb-fade 0.4s var(--bb-ease) backwards;
+  animation: bb-fade 0.35s var(--bb-ease) backwards;
 }
 
 /* Gentle entrance for freshly rendered lists. */
 .bb-stagger > * {
-  animation: bb-rise 0.34s var(--bb-ease) backwards;
+  animation: bb-rise 0.3s var(--bb-ease) backwards;
 }
 
 .bb-stagger > *:nth-child(1) {
   animation-delay: 0ms;
 }
 .bb-stagger > *:nth-child(2) {
-  animation-delay: 40ms;
+  animation-delay: 35ms;
 }
 .bb-stagger > *:nth-child(3) {
-  animation-delay: 80ms;
+  animation-delay: 70ms;
 }
 .bb-stagger > *:nth-child(4) {
-  animation-delay: 120ms;
+  animation-delay: 105ms;
 }
 .bb-stagger > *:nth-child(5) {
-  animation-delay: 160ms;
+  animation-delay: 140ms;
 }
 .bb-stagger > *:nth-child(6) {
-  animation-delay: 200ms;
+  animation-delay: 175ms;
 }
 
 /*
@@ -802,6 +960,7 @@ ion-alert {
   }
 
   .admin-nav a {
+    min-height: 44px;
     padding: 10px 12px;
     font-size: 14px;
   }
@@ -816,11 +975,12 @@ ion-alert {
   }
 
   .admin-page-header {
+    align-items: flex-start;
     margin-bottom: var(--bb-space-4);
   }
 
   .admin-page-header h1 {
-    font-size: 22px;
+    font-size: var(--bb-text-xl);
   }
 
   .admin-panel {
@@ -828,8 +988,24 @@ ion-alert {
   }
 
   .filter-bar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
     padding: var(--bb-space-3);
+  }
+
+  .filter-search,
+  .filter-select,
+  .filter-clear {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .filter-clear {
+    justify-content: flex-start;
+  }
+
+  .admin-state {
+    padding: 40px var(--bb-space-4);
   }
 }
 
@@ -848,6 +1024,10 @@ ion-alert {
   }
 }
 
+/* -------------------------------------------------------------------------
+ * GCash proof lightbox (shared by the Orders page)
+ * ------------------------------------------------------------------------- */
+
 .proof-lightbox {
   position: fixed;
   inset: 0;
@@ -857,6 +1037,7 @@ ion-alert {
   justify-content: center;
   padding: var(--bb-space-4);
   background: rgba(20, 15, 12, 0.82);
+  animation: bb-fade 0.2s var(--bb-ease);
 }
 
 .proof-lightbox-panel {
@@ -864,7 +1045,7 @@ ion-alert {
   flex-direction: column;
   width: min(960px, 100%);
   max-height: 92vh;
-  border-radius: var(--bb-radius-md);
+  border-radius: var(--bb-radius-lg);
   background: var(--bb-surface);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
   overflow: hidden;
@@ -886,6 +1067,8 @@ ion-alert {
 
 .proof-lightbox-meta h2 {
   margin: 0;
+  color: #ffffff;
+  font-family: var(--bb-font-body);
   font-size: 16px;
   font-weight: 700;
 }
@@ -899,7 +1082,7 @@ ion-alert {
 
 .proof-lightbox-order {
   opacity: 0.75;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--bb-font-mono);
   font-size: 11px !important;
 }
 
@@ -927,7 +1110,7 @@ ion-alert {
   border: 1px dashed rgba(255, 255, 255, 0.35);
   border-radius: var(--bb-radius-sm);
   color: #fff;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   line-height: 1.55;
   text-align: center;
 }
@@ -939,7 +1122,7 @@ ion-alert {
 }
 
 .proof-order-id {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--bb-font-mono);
   font-size: 12px !important;
 }
 

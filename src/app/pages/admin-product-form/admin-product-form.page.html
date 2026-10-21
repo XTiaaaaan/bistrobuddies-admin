@@ -27,8 +27,10 @@
       </div>
     } @else {
       <form class="product-form" (ngSubmit)="save()">
-        <section class="form-panel bb-rise">
-          <h2>Details</h2>
+        <div class="form-columns">
+          <div class="form-column form-column--main">
+            <section class="form-panel form-panel--details bb-rise">
+              <h2>Details</h2>
 
           <ion-list lines="none" class="form-list">
             <ion-item>
@@ -152,10 +154,12 @@
               size.
             </p>
           }
-        </section>
+            </section>
+          </div>
 
-        <section class="form-panel bb-rise">
-          <h2>Availability</h2>
+          <div class="form-column form-column--side">
+            <section class="form-panel form-panel--availability bb-rise">
+              <h2>Availability</h2>
           <ion-list lines="none" class="form-list">
             <ion-item>
               <ion-toggle
@@ -167,78 +171,85 @@
               ></ion-toggle>
             </ion-item>
           </ion-list>
-        </section>
+            </section>
 
-        <section class="form-panel bb-rise">
-          <h2>Image</h2>
-          <p class="section-hint">
-            Choose a JPEG, PNG, or WebP image (max 5 MB).
-          </p>
+            <section class="form-panel form-panel--image bb-rise">
+              <h2>Image</h2>
+              <p class="section-hint">
+                Choose a JPEG, PNG, or WebP image (max 5 MB).
+              </p>
 
-          <div class="upload-zone">
-            <input
-              class="image-file-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              name="imageFile"
-              [disabled]="saving() || loading()"
-              (change)="onFileSelected($event)"
-            />
+              <div class="upload-zone">
+                <input
+                  class="image-file-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  name="imageFile"
+                  [disabled]="saving() || loading()"
+                  (change)="onFileSelected($event)"
+                />
+              </div>
+
+              @if (editing() && !imageSelected() && imageUrl) {
+                <p class="section-hint">
+                  This is the current image.
+                </p>
+              }
+
+              @if (imagePreview()) {
+                <div class="image-preview">
+                  <img [src]="imagePreview()" alt="Product image preview" />
+                </div>
+              }
+
+              @if (uploading()) {
+                <p class="section-status" role="status">
+                  <ion-spinner name="crescent"></ion-spinner>
+                  <span>Uploading image…</span>
+                </p>
+              }
+
+              @if (uploadNotice()) {
+                <p
+                  class="admin-notice"
+                  [class.admin-notice--error]="uploadNoticeError()"
+                  [class.admin-notice--success]="!uploadNoticeError()"
+                  [attr.role]="uploadNoticeError() ? 'alert' : 'status'"
+                >
+                  {{ uploadNotice() }}
+                </p>
+              }
+            </section>
+
+            <section class="form-panel form-panel--sugar bb-rise">
+              <h2>Sugar options</h2>
+              <p class="section-hint">Options customers can choose from.</p>
+              <div class="sugar-chips">
+                @for (option of sugarChoices; track option) {
+                  <ion-button
+                    size="small"
+                    fill="outline"
+                    [color]="
+                      selectedSugar().includes(option) ? 'primary' : 'medium'
+                    "
+                    (click)="toggleSugar(option)"
+                  >
+                    {{ option }}
+                  </ion-button>
+                }
+              </div>
+            </section>
           </div>
-
-          @if (editing() && !imageSelected() && imageUrl) {
-            <p class="section-hint">
-              This is the current image.
-            </p>
-          }
-
-          @if (imagePreview()) {
-            <div class="image-preview">
-              <img [src]="imagePreview()" alt="Product image preview" />
-            </div>
-          }
-
-          @if (uploading()) {
-            <p class="section-status" role="status">
-              <ion-spinner name="crescent"></ion-spinner>
-              <span>Uploading image…</span>
-            </p>
-          }
-
-          @if (uploadNotice()) {
-            <p
-              class="admin-notice"
-              [class.admin-notice--error]="uploadNoticeError()"
-              [class.admin-notice--success]="!uploadNoticeError()"
-              [attr.role]="uploadNoticeError() ? 'alert' : 'status'"
-            >
-              {{ uploadNotice() }}
-            </p>
-          }
-        </section>
-
-        <section class="form-panel bb-rise">
-          <h2>Sugar options</h2>
-          <p class="section-hint">Options customers can choose from.</p>
-          <div class="sugar-chips">
-            @for (option of sugarChoices; track option) {
-              <ion-button
-                size="small"
-                fill="outline"
-                [color]="selectedSugar().includes(option) ? 'primary' : 'medium'"
-                (click)="toggleSugar(option)"
-              >
-                {{ option }}
-              </ion-button>
-            }
-          </div>
-        </section>
+        </div>
 
         <div class="form-actions">
           <ion-button routerLink="/products" fill="outline">
             Cancel
           </ion-button>
-          <ion-button type="submit" [disabled]="saving() || loading() || uploading()">
+          <ion-button
+            type="submit"
+            [disabled]="saving() || loading() || uploading()"
+          >
             @if (uploading()) {
               Uploading image…
             } @else if (saving()) {

@@ -7,7 +7,7 @@
           {{ products().length }} items on the BistroBuddies menu
         </p>
       </div>
-      <ion-button routerLink="/products/new">
+      <ion-button class="add-product-btn" routerLink="/products/new">
         <ion-icon slot="start" name="add"></ion-icon>
         Add Product
       </ion-button>
@@ -29,7 +29,9 @@
         <ion-icon name="cafe"></ion-icon>
         <h3>No products yet</h3>
         <p>Add your first coffee product to the menu.</p>
-        <ion-button routerLink="/products/new">Add Product</ion-button>
+        <ion-button class="add-product-btn" routerLink="/products/new">
+          Add Product
+        </ion-button>
       </div>
     } @else {
       <div class="filter-bar" role="search">

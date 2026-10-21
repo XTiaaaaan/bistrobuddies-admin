@@ -28,6 +28,7 @@ import {
   alertCircle,
   receipt,
   refresh,
+  search,
   shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { formatDateTime, formatPhp, shortId } from '@shared/core/format/format';
@@ -84,7 +85,6 @@ import {
   Order,
   OrderRefundRequest,
   OrderStatus,
-  PaymentAuditEntry,
   PaymentDecision,
   PaymentProof,
 } from '@shared/models/order.model';
@@ -131,6 +131,19 @@ export class AdminOrdersPage implements OnInit {
 
   /** Explanation shown for cancelled orders in place of fulfilment actions. */
   readonly cancelledOrderMessage = CANCELLED_ORDER_MESSAGE;
+
+  /**
+   * Delivery pipeline shown as the progress rail on each order card. Display
+   * only: it mirrors the backend transition graph and never drives a change.
+   */
+  readonly statusSteps: { status: OrderStatus; label: string }[] = [
+    { status: 'PENDING', label: 'Pending' },
+    { status: 'CONFIRMED', label: 'Confirmed' },
+    { status: 'PREPARING', label: 'Preparing' },
+    { status: 'READY', label: 'Ready' },
+    { status: 'OUT_FOR_DELIVERY', label: 'On the Way' },
+    { status: 'COMPLETED', label: 'Delivered' },
+  ];
 
   /**
    * Explanation prepended to the refund dialogs: BistroBuddies never moves
@@ -216,7 +229,7 @@ export class AdminOrdersPage implements OnInit {
   private readonly route = inject(ActivatedRoute, { optional: true });
 
   constructor() {
-    addIcons({ alertCircle, receipt, refresh, shieldCheckmarkOutline });
+    addIcons({ alertCircle, receipt, refresh, search, shieldCheckmarkOutline });
   }
 
   ngOnInit(): void {
@@ -376,6 +389,21 @@ export class AdminOrdersPage implements OnInit {
   /** Whether this order can be dispatched now (READY -> On the Way). */
   canDispatch(order: Order): boolean {
     return this.allowedNext(order).includes('OUT_FOR_DELIVERY');
+  }
+
+  /**
+   * Whether a pipeline step is already behind the order's current status.
+   * Powers the progress rail only — it has no effect on what the backend is
+   * asked to do.
+   */
+  isStepReached(order: Order, step: OrderStatus): boolean {
+    const currentIndex = this.statusSteps.findIndex(
+      (entry) => entry.status === order.orderStatus
+    );
+    const stepIndex = this.statusSteps.findIndex(
+      (entry) => entry.status === step
+    );
+    return currentIndex >= 0 && stepIndex >= 0 && stepIndex <= currentIndex;
   }
 
   async requestStatusChange(order: Order, next: OrderStatus): Promise<void> {
@@ -546,11 +574,6 @@ export class AdminOrdersPage implements OnInit {
   /** Rejection explanation stored by the backend, when present. */
   proofRejectionReason(order: Order): string | null {
     return rejectionReasonOf(order);
-  }
-
-  /** Append-only payment audit trail kept by the backend (admin-only). */
-  paymentAuditEntries(order: Order): PaymentAuditEntry[] {
-    return order.paymentAudit ?? [];
   }
 
   paymentDecisionLabel(decision: unknown): string {

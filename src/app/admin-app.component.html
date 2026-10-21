@@ -20,7 +20,7 @@
           @if (isAdmin()) {
             <admin-notifications-bell></admin-notifications-bell>
           }
-          <ion-button (click)="logout()">
+          <ion-button (click)="logout()" aria-label="Log out of BistroBuddies admin">
             <ion-icon slot="start" name="log-out"></ion-icon>
             <span class="logout-label">Log Out</span>
           </ion-button>

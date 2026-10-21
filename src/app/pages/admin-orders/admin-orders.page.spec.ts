@@ -284,7 +284,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     );
   });
 
-  it('shows the rejection reason and payment audit history', async () => {
+  it('shows the rejection reason', async () => {
     ordersSubject.next([
       makeOrder({
         paymentStatus: 'REJECTED',
@@ -294,14 +294,6 @@ describe('AdminOrdersPage GCash payment verification', () => {
           decidedAt: '2026-10-20T09:00:00.000Z',
           reason: 'No matching GCash transaction.',
         },
-        paymentAudit: [
-          {
-            from: 'VERIFYING',
-            to: 'REJECTED',
-            actorUid: 'admin-1',
-            actorRole: 'admin',
-          },
-        ],
       }),
     ]);
     await waitFor(() => page.status() === 'ready');
@@ -314,7 +306,6 @@ describe('AdminOrdersPage GCash payment verification', () => {
     expect(page.proofRejectionReason(order)).toBe(
       'No matching GCash transaction.'
     );
-    expect(page.paymentAuditEntries(order)).toHaveLength(1);
   });
 
   it('handles orders with no submitted details', async () => {
