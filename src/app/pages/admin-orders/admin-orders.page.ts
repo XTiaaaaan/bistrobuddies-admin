@@ -49,7 +49,6 @@ import {
 import {
   allowedNextOrderStatuses,
   canTransitionOrder,
-  resolveFulfillmentType,
 } from '@shared/core/orders/order-fulfillment';
 import {
   canConfirmPayment,
@@ -359,23 +358,24 @@ export class AdminOrdersPage implements OnInit {
   }
 
   /**
-   * Statuses the backend will accept for this order right now, filtered by
-   * fulfilment mode so pickup orders never offer On the Way.
+   * Payment status is hidden for cancelled orders so a stale "Pending" label
+   * never appears next to Cancelled. Payment data itself is left untouched.
+   */
+  showsPaymentStatus(order: Order): boolean {
+    return !this.isCancelled(order);
+  }
+
+  /**
+   * Statuses the backend will accept for this order right now: READY offers
+   * On the Way, OUT_FOR_DELIVERY offers Delivered, terminal states offer none.
    */
   allowedNext(order: Order): OrderStatus[] {
     return allowedNextOrderStatuses(order);
   }
 
-  /** Whether this order is a delivery order that can be dispatched now. */
+  /** Whether this order can be dispatched now (READY -> On the Way). */
   canDispatch(order: Order): boolean {
-    return order.orderStatus === 'READY' && this.allowedNext(order).includes(
-      'OUT_FOR_DELIVERY'
-    );
-  }
-
-  /** Fulfilment mode shown on the card ("Delivery" or "Pickup"). */
-  fulfillmentLabel(order: Order): string {
-    return resolveFulfillmentType(order) === 'DELIVERY' ? 'Delivery' : 'Pickup';
+    return this.allowedNext(order).includes('OUT_FOR_DELIVERY');
   }
 
   async requestStatusChange(order: Order, next: OrderStatus): Promise<void> {

@@ -4,7 +4,7 @@ import {
   provideHttpClientTesting,
   TestRequest,
 } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlertController, ToastController } from '@ionic/angular';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -544,7 +544,7 @@ describe('AdminOrdersPage GCash payment verification', () => {
     await waitFor(() => page.busyId() === null);
   });
 
-  it('offers and sends OUT_FOR_DELIVERY for a ready delivery order', async () => {
+  it('offers and sends On the Way for a ready order', async () => {
     ordersSubject.next([
       makeOrder({
         id: 'delivery-1',
@@ -555,12 +555,11 @@ describe('AdminOrdersPage GCash payment verification', () => {
     await waitFor(() => page.status() === 'ready');
 
     const order = page.orders()[0];
-    expect(page.fulfillmentLabel(order)).toBe('Delivery');
     expect(page.allowedNext(order)).toEqual([
       'OUT_FOR_DELIVERY',
-      'COMPLETED',
       'CANCELLED',
     ]);
+    expect(page.allowedNext(order)).not.toContain('COMPLETED');
     expect(page.canDispatch(order)).toBe(true);
     expect(page.statusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
 
@@ -577,33 +576,44 @@ describe('AdminOrdersPage GCash payment verification', () => {
     await waitFor(() => page.busyId() === null);
   });
 
-  it('never forces a pickup order through OUT_FOR_DELIVERY', async () => {
+  it('blocks the invalid READY to Delivered jump before hitting the API', async () => {
     ordersSubject.next([
       makeOrder({
-        id: 'pickup-1',
+        id: 'ready-1',
         orderStatus: 'READY',
-        fulfillmentType: 'PICKUP',
-        addressSnapshot: null,
+        fulfillmentType: 'DELIVERY',
       }),
     ]);
     await waitFor(() => page.status() === 'ready');
 
     const order = page.orders()[0];
-    expect(page.fulfillmentLabel(order)).toBe('Pickup');
-    expect(page.allowedNext(order)).toEqual(['COMPLETED', 'CANCELLED']);
-    expect(page.allowedNext(order)).not.toContain('OUT_FOR_DELIVERY');
-    expect(page.canDispatch(order)).toBe(false);
+    await page.requestStatusChange(order, 'COMPLETED');
 
-    await page.requestStatusChange(order, 'OUT_FOR_DELIVERY');
     expect(alertCreate).not.toHaveBeenCalled();
     await tick();
-    httpMock.expectNone((req) => req.url === statusUrl('pickup-1'));
+    httpMock.expectNone((req) => req.url === statusUrl('ready-1'));
     expect(toastCreate).toHaveBeenCalledWith(
       expect.objectContaining({ color: 'danger' })
     );
   });
 
-  it('completes an order that is already On the Way', async () => {
+  it('shows Delivered and no further completion action for a completed order', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'delivered-1',
+        orderStatus: 'COMPLETED',
+        fulfillmentType: 'DELIVERY',
+      }),
+    ]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.statusLabel(order.orderStatus)).toBe('Delivered');
+    expect(page.statusColor(order.orderStatus)).toBe('success');
+    expect(page.allowedNext(order)).toEqual([]);
+  });
+
+  it('offers Delivered only once an order is On the Way', async () => {
     ordersSubject.next([
       makeOrder({
         id: 'on-the-way-1',
@@ -616,8 +626,8 @@ describe('AdminOrdersPage GCash payment verification', () => {
     const order = page.orders()[0];
     expect(page.statusLabel(order.orderStatus)).toBe('On the Way');
     expect(page.statusColor(order.orderStatus)).toBe('info');
-    expect(page.fulfillmentLabel(order)).toBe('Delivery');
     expect(page.allowedNext(order)).toEqual(['COMPLETED', 'CANCELLED']);
+    expect(page.statusLabel('COMPLETED')).toBe('Delivered');
 
     await page.requestStatusChange(order, 'COMPLETED');
     confirmButton().handler?.();
@@ -626,6 +636,14 @@ describe('AdminOrdersPage GCash payment verification', () => {
     expect(request.request.body).toEqual({ orderStatus: 'COMPLETED' });
     request.flush({ id: 'on-the-way-1', orderStatus: 'COMPLETED' });
     await waitFor(() => page.busyId() === null);
+  });
+
+  it('labels all five workflow statuses consistently', () => {
+    expect(page.statusLabel('CONFIRMED')).toBe('Confirmed');
+    expect(page.statusLabel('PREPARING')).toBe('Preparing');
+    expect(page.statusLabel('READY')).toBe('Ready');
+    expect(page.statusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
+    expect(page.statusLabel('COMPLETED')).toBe('Delivered');
   });
 
   it('focuses the order named by a notification deep link', async () => {
@@ -710,6 +728,24 @@ describe('AdminOrdersPage cancelled orders', () => {
     expect(page.statusLabel(order.orderStatus)).toBe('Cancelled');
     // Muted, not the alert (danger) color.
     expect(page.statusColor(order.orderStatus)).toBe('medium');
+  });
+
+  it('hides the payment badge for cancelled orders without changing payment data', async () => {
+    const cancelled = makeOrder({
+      id: 'cancelled-1',
+      orderStatus: 'CANCELLED',
+      paymentStatus: 'PENDING',
+    });
+    ordersSubject.next([cancelled]);
+    await waitFor(() => page.status() === 'ready');
+
+    const order = page.orders()[0];
+    expect(page.showsPaymentStatus(order)).toBe(false);
+    // The stored payment state is untouched — only the display is hidden.
+    expect(order.paymentStatus).toBe('PENDING');
+    expect(page.showsPaymentStatus(makeOrder({ orderStatus: 'READY' }))).toBe(
+      true
+    );
   });
 
   it('offers no fulfilment actions for a cancelled order', async () => {
@@ -1250,3 +1286,94 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
   });
 });
 
+
+describe('AdminOrdersPage order badges', () => {
+  let fixture: ComponentFixture<AdminOrdersPage>;
+  let page: AdminOrdersPage;
+  let ordersSubject: BehaviorSubject<Order[]>;
+
+  const getIdToken = vi.fn();
+  const alertCreate = vi.fn();
+  const toastCreate = vi.fn();
+
+  function setup(): void {
+    TestBed.configureTestingModule({
+      providers: [
+        AdminOrdersPage,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: { getIdToken } },
+        {
+          provide: OrdersService,
+          useValue: { watchOrders: () => ordersSubject.asObservable() },
+        },
+        { provide: AlertController, useValue: { create: alertCreate } },
+        { provide: ToastController, useValue: { create: toastCreate } },
+      ],
+    });
+    fixture = TestBed.createComponent(AdminOrdersPage);
+    page = fixture.componentInstance;
+  }
+
+  function badgeTexts(): string[] {
+    return Array.from(
+      fixture.nativeElement.querySelectorAll('ion-badge')
+    ).map((badge) => (badge as HTMLElement).textContent?.trim() ?? '');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ordersSubject = new BehaviorSubject<Order[]>([]);
+    getIdToken.mockResolvedValue('test-id-token');
+    alertCreate.mockResolvedValue({ present: vi.fn() });
+    toastCreate.mockResolvedValue({ present: vi.fn() });
+    setup();
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
+  });
+
+  it('does not render a Delivery fulfilment tag in the order list or details', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'delivery-tag',
+        orderStatus: 'READY',
+        fulfillmentType: 'DELIVERY',
+      }),
+    ]);
+    fixture.detectChanges();
+    await waitFor(() => page.status() === 'ready');
+    fixture.detectChanges();
+
+    const badges = badgeTexts();
+    expect(badges).toContain('Ready');
+    expect(badges).not.toContain('Delivery');
+    expect(badges.some((text) => /delivery/i.test(text))).toBe(false);
+  });
+
+  it('shows Cancelled without any payment badge or payment status label', async () => {
+    ordersSubject.next([
+      makeOrder({
+        id: 'cancelled-display',
+        orderStatus: 'CANCELLED',
+        paymentStatus: 'PENDING',
+      }),
+    ]);
+    fixture.detectChanges();
+    await waitFor(() => page.status() === 'ready');
+    fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector(
+      '.order-card'
+    ) as HTMLElement;
+    expect(card.textContent).toContain('Cancelled');
+    expect(badgeTexts()).toContain('Cancelled');
+    expect(badgeTexts().some((text) => /^Payment:/.test(text))).toBe(false);
+    expect(card.textContent).not.toMatch(/Payment:\s*Pending/);
+    expect(card.textContent).not.toMatch(/Status:\s*Pending/);
+    // The stored payment state is untouched; only its badge is hidden.
+    expect(page.orders()[0].paymentStatus).toBe('PENDING');
+  });
+});

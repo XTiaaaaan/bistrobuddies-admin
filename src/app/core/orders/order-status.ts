@@ -19,8 +19,9 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
 ];
 
 /**
- * Mirrors the backend graph. `OUT_FOR_DELIVERY` is only reachable from
- * `READY`; pickup orders skip it (see `order-fulfillment.ts`).
+ * Mirrors the backend graph. Every order is delivered, so `READY` can only
+ * advance to `OUT_FOR_DELIVERY`; `COMPLETED` (Delivered) is reachable only
+ * after the order is On the Way.
  */
 export const ORDER_STATUS_TRANSITIONS: Record<
   OrderStatus,
@@ -29,7 +30,7 @@ export const ORDER_STATUS_TRANSITIONS: Record<
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  READY: ['OUT_FOR_DELIVERY', 'CANCELLED'],
   OUT_FOR_DELIVERY: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
@@ -81,18 +82,32 @@ export function canTransition(current: unknown, next: unknown): boolean {
 }
 
 /**
- * Human readable label for an order status. The internal stored value
- * `OUT_FOR_DELIVERY` is shown as "On the Way" exactly as the backend's
- * `orderStatusLabel` does; every other value keeps the previous formatting.
+ * Human readable label for an order status. The stored values stay unchanged;
+ * only their display names follow the delivery workflow:
+ * Confirmed → Preparing → Ready → On the Way → Delivered.
  */
 export function orderStatusLabel(status: unknown): string {
   if (!isOrderStatus(status)) {
     return typeof status === 'string' && status ? status : 'UNKNOWN';
   }
-  if (status === 'OUT_FOR_DELIVERY') {
-    return 'On the Way';
+  switch (status) {
+    case 'CONFIRMED':
+      return 'Confirmed';
+    case 'PREPARING':
+      return 'Preparing';
+    case 'READY':
+      return 'Ready';
+    case 'OUT_FOR_DELIVERY':
+      return 'On the Way';
+    case 'COMPLETED':
+      return 'Delivered';
+    case 'CANCELLED':
+      return 'Cancelled';
+    case 'PENDING':
+      return 'Pending';
+    default:
+      return status;
   }
-  return status.charAt(0) + status.slice(1).toLowerCase();
 }
 
 /** Badge color for an order status (Ionic color names). */

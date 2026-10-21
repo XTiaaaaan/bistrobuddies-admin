@@ -48,7 +48,7 @@
           (click)="applyQuickFilter('completed')"
         >
           <strong>{{ completedCount() }}</strong>
-          <span>Completed</span>
+          <span>Delivered</span>
         </button>
         <button
           type="button"
@@ -203,17 +203,16 @@
                 <ion-badge [color]="statusColor(order.orderStatus)">
                   {{ statusLabel(order.orderStatus) }}
                 </ion-badge>
-                <ion-badge
-                  [color]="paymentStatusColor(order.paymentStatus)"
-                  [title]="order.paymentStatus"
-                >
-                  Payment: {{ paymentStatusLabel(order.paymentStatus) }}
-                </ion-badge>
+                @if (showsPaymentStatus(order)) {
+                  <ion-badge
+                    [color]="paymentStatusColor(order.paymentStatus)"
+                    [title]="order.paymentStatus"
+                  >
+                    Payment: {{ paymentStatusLabel(order.paymentStatus) }}
+                  </ion-badge>
+                }
                 <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
                   {{ order.paymentMethod }}
-                </ion-badge>
-                <ion-badge color="tertiary">
-                  {{ fulfillmentLabel(order) }}
                 </ion-badge>
                 @if (showsRefundStatus(order)) {
                   <ion-badge [color]="refundColor(refundStatus(order))">
@@ -344,15 +343,17 @@
                 <p>
                   Method: <strong>{{ order.paymentMethod }}</strong>
                 </p>
-                <p class="status-line">
-                  Status:
-                  <ion-badge
-                    [color]="paymentStatusColor(order.paymentStatus)"
-                    [title]="order.paymentStatus"
-                  >
-                    {{ paymentStatusLabel(order.paymentStatus) }}
-                  </ion-badge>
-                </p>
+                @if (showsPaymentStatus(order)) {
+                  <p class="status-line">
+                    Status:
+                    <ion-badge
+                      [color]="paymentStatusColor(order.paymentStatus)"
+                      [title]="order.paymentStatus"
+                    >
+                      {{ paymentStatusLabel(order.paymentStatus) }}
+                    </ion-badge>
+                  </p>
+                }
                 @if (isGcashOrder(order)) {
                   @if (paymentProof(order); as proof) {
                     <div
