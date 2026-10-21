@@ -130,6 +130,17 @@
     box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
+/*
+ * While a field is focused Ionic paints the stacked label and the text caret
+ * with its stock highlight colours — blue for focus, green once the value is
+ * valid. Re-map them to the palette so typing stays inside the coffee theme.
+ */
+.admin-login-fields ion-input {
+  --highlight-color-focused: var(--bb-espresso);
+  --highlight-color-valid: var(--bb-espresso);
+  --highlight-color-invalid: var(--bb-danger);
+}
+
 .admin-login-fields ion-item:focus-within {
   border-color: var(--bb-coffee);
   box-shadow: var(--bb-focus-ring);
