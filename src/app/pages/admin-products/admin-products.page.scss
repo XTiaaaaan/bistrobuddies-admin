@@ -142,7 +142,12 @@
   --color: var(--bb-danger-soft-text);
 }
 
-@media (max-width: 720px) {
+/*
+ * Below ~960px (or on narrower laptops beside the sidebar) the card runs
+ * out of horizontal room, so the availability toggle and action buttons
+ * move to their own full-width row under the product details.
+ */
+@media (max-width: 960px) {
   .product-body {
     padding: var(--bb-space-3);
     gap: var(--bb-space-3);
@@ -160,6 +165,8 @@
     justify-content: flex-start;
     margin-left: 0;
     width: 100%;
+    padding-top: var(--bb-space-3);
+    border-top: 1px dashed var(--bb-border-strong);
   }
 
   .action-buttons {

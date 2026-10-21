@@ -15,7 +15,7 @@
  */
 import { Order, RefundStatus } from '@shared/models/order.model';
 import { isCancelledOrder } from './order-status';
-import { paymentStatusOf } from './payment-decision';
+import { hasCollectedPayment } from './payment-decision';
 
 /**
  * The normalized refund status for an order: the backend's actual values
@@ -30,12 +30,13 @@ export function refundStatusOf(order: Order): RefundStatus {
     : 'NOT_REFUNDED';
 }
 
-/** Whether this order is cancelled with a confirmed (PAID) payment. */
+/**
+ * Whether this order is cancelled with evidence that money was collected.
+ * Only the persisted payment status/history is trusted; cancellation itself
+ * never implies that the customer paid.
+ */
 export function isCancelledPaidOrder(order: Order): boolean {
-  return (
-    isCancelledOrder(order.orderStatus) &&
-    paymentStatusOf(order) === 'PAID'
-  );
+  return isCancelledOrder(order.orderStatus) && hasCollectedPayment(order);
 }
 
 /**
@@ -113,12 +114,17 @@ export function refundStatusColor(status: unknown): string {
 }
 
 /**
- * Whether the refund status is worth displaying for this order: any
- * recorded refund state (`REFUND_PENDING`/`REFUNDED`) is always shown, and
- * cancelled paid orders show `NOT_REFUNDED` because they can still be
- * refunded. Everything else has no meaningful refund state yet.
+ * Whether the refund status is worth displaying for this order. A refund
+ * status is only meaningful when persisted payment records show money was
+ * actually collected, so cancelled unpaid COD orders (including legacy
+ * documents with stale `refund` fields) never display one. Recorded refunds
+ * for genuinely paid orders are preserved and shown as stored, and cancelled
+ * paid orders show `NOT_REFUNDED` because they can still be refunded.
  */
 export function showRefundStatus(order: Order): boolean {
+  if (!hasCollectedPayment(order)) {
+    return false;
+  }
   return refundStatusOf(order) !== 'NOT_REFUNDED' || isCancelledPaidOrder(order);
 }
 

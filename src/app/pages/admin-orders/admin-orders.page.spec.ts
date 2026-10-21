@@ -991,6 +991,42 @@ describe('AdminOrdersPage refunds for cancelled paid orders', () => {
     httpMock.expectNone((req) => req.url.includes('/refund'));
   });
 
+  it('does not display a refund for a cancelled unpaid COD order with legacy fields', async () => {
+    const order = paidCancelled({
+      id: 'legacy-cod-unpaid',
+      paymentMethod: 'COD',
+      paymentStatus: 'PENDING',
+      gcashDetails: null,
+      refund: {
+        status: 'REFUND_PENDING',
+        amount: 215,
+        requestedAt: '2026-10-15T10:00:00.000Z',
+      },
+    });
+    ordersSubject.next([order]);
+    await waitFor(() => page.status() === 'ready');
+
+    // The raw historic value is preserved but never presented as refundable.
+    expect(page.refundStatus(order)).toBe('REFUND_PENDING');
+    expect(page.showsRefundStatus(order)).toBe(false);
+    expect(page.canStartRefund(order)).toBe(false);
+    expect(page.canCompleteRefund(order)).toBe(false);
+  });
+
+  it('keeps refund handling for a cancelled COD order whose cash was collected', async () => {
+    const order = paidCancelled({
+      id: 'legacy-cod-paid',
+      paymentMethod: 'COD',
+      paymentStatus: 'PAID',
+    });
+    ordersSubject.next([order]);
+    await waitFor(() => page.status() === 'ready');
+
+    expect(page.showsRefundStatus(order)).toBe(true);
+    expect(page.canStartRefund(order)).toBe(true);
+    expect(page.refundOf(order)).toBe(215);
+  });
+
   it('displays the refund status, amount and timestamps when recorded', async () => {
     ordersSubject.next([
       paidCancelled({

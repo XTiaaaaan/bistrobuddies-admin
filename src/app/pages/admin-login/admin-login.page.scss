@@ -1,5 +1,10 @@
 .admin-login-content {
-  --background: var(--admin-bg);
+  --background: radial-gradient(
+      900px 420px at 50% -80px,
+      rgba(230, 213, 192, 0.7),
+      transparent 65%
+    ),
+    var(--admin-bg);
 }
 
 .admin-login-page {

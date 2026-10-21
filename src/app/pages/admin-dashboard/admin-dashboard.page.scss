@@ -111,58 +111,79 @@
   font-weight: 700;
 }
 
-/* ── Stat grid and cards ── */
+/* ── Stat grid and cards ──
+ *
+ * Metric cards read left to right: a tinted icon tile, then the number and
+ * its label stacked beside it. Values keep their original calculations —
+ * this is a presentation change only.
+ */
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: var(--bb-space-4);
   margin-bottom: var(--bb-space-5);
 }
 
 .stat-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
+  gap: var(--bb-space-4);
   height: 100%;
-  padding: var(--bb-space-4) var(--bb-space-3);
-  text-align: center;
+  padding: var(--bb-space-4);
+  text-align: left;
+  transition:
+    box-shadow var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    transform var(--bb-motion-fast) var(--bb-ease);
+}
+
+@media (hover: hover) {
+  .stat-card:hover {
+    border-color: var(--bb-border-strong);
+    box-shadow: var(--bb-shadow-raised);
+    transform: translateY(-1px);
+  }
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--bb-radius-md);
   background: var(--bb-tan);
-  margin-bottom: var(--bb-space-1);
 }
 
 .stat-icon ion-icon {
-  font-size: 22px;
+  font-size: 24px;
   color: var(--bb-espresso);
 }
 
-.stat-card ion-card-header {
-  padding: var(--bb-space-1) 0 2px;
+.stat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.stat-card ion-card-title {
+.stat-value {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 38px;
+  font-size: 30px;
   font-weight: 600;
   line-height: 1.1;
   color: var(--bb-espresso);
+  font-variant-numeric: tabular-nums;
 }
 
-.stat-card ion-card-content {
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.stat-label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
   color: var(--bb-text-muted);
 }
 
@@ -170,11 +191,8 @@
   background: var(--bb-success-soft-bg);
 }
 
-.stat-available .stat-icon ion-icon {
-  color: var(--bb-success);
-}
-
-.stat-available ion-card-title {
+.stat-available .stat-icon ion-icon,
+.stat-available .stat-value {
   color: var(--bb-success);
 }
 
@@ -182,25 +200,229 @@
   background: var(--bb-danger-soft-bg);
 }
 
-.stat-unavailable .stat-icon ion-icon {
+.stat-unavailable .stat-icon ion-icon,
+.stat-unavailable .stat-value {
   color: var(--bb-danger);
 }
 
-.stat-unavailable ion-card-title {
-  color: var(--bb-danger);
+.stat-pending .stat-icon,
+.stat-progress .stat-icon {
+  background: var(--bb-info-soft-bg);
+}
+
+.stat-pending .stat-icon ion-icon,
+.stat-progress .stat-icon ion-icon {
+  color: var(--bb-info-soft-text);
 }
 
 /* GCash cards light up only when there is something to verify. */
+.stat-card.stat-attention {
+  border-color: rgba(166, 123, 91, 0.45);
+}
+
 .stat-attention .stat-icon {
   background: var(--bb-warning-soft-bg);
 }
 
-.stat-attention .stat-icon ion-icon {
+.stat-attention .stat-icon ion-icon,
+.stat-attention .stat-value {
   color: var(--bb-warning-soft-text);
 }
 
-.stat-attention ion-card-title {
+/* ── Financial analytics ── */
+
+.financial-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bb-space-3);
+  margin-bottom: var(--bb-space-3);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+}
+
+.period-tabs {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bb-tan);
+  border-radius: var(--bb-radius-pill);
+}
+
+.period-tab {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--bb-radius-pill);
+  background: transparent;
+  color: var(--bb-espresso);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.period-tab--active {
+  background: var(--bb-espresso);
+  color: #ffffff;
+  box-shadow: var(--bb-shadow-card);
+}
+
+.period-tab:focus-visible {
+  outline: 2px solid var(--bb-coffee);
+  outline-offset: 2px;
+}
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-1);
+  margin-left: auto;
+}
+
+.period-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 168px;
+  text-align: center;
+}
+
+.period-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.period-range {
+  font-size: 12px;
+  color: var(--bb-text-muted);
+}
+
+.period-arrow {
+  --color: var(--bb-espresso);
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: 32px;
+  margin: 0;
+}
+
+.period-current {
+  --border-color: var(--bb-border-strong);
+  --color: var(--bb-espresso);
+  white-space: nowrap;
+}
+
+.financial-note {
+  max-width: 860px;
+  margin: 0 0 var(--bb-space-3);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--bb-text-muted);
+}
+
+.financial-note--warning {
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-warning-soft-bg);
+  border: 1px solid rgba(166, 123, 91, 0.32);
+  border-radius: var(--bb-radius-md);
   color: var(--bb-warning-soft-text);
+  font-weight: 500;
+}
+
+.financial-stats {
+  margin-bottom: var(--bb-space-4);
+}
+
+.stat-revenue .stat-icon {
+  background: var(--bb-tan);
+}
+
+.stat-revenue .stat-icon ion-icon,
+.stat-revenue .stat-value {
+  color: var(--bb-espresso);
+}
+
+.financial-breakdown {
+  padding: var(--bb-space-4);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+}
+
+.breakdown-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bb-space-2);
+  margin-bottom: var(--bb-space-3);
+}
+
+.breakdown-head h3 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 330px;
+  padding-right: var(--bb-space-1);
+  overflow-y: auto;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 72px minmax(80px, 1fr) 104px 64px;
+  align-items: center;
+  gap: var(--bb-space-3);
+  font-size: 13px;
+}
+
+.breakdown-label {
+  color: var(--bb-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.breakdown-track {
+  min-width: 60px;
+  height: 8px;
+  overflow: hidden;
+  background: var(--bb-surface-sunken);
+  border-radius: var(--bb-radius-pill);
+}
+
+.breakdown-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bb-coffee), var(--bb-espresso));
+  border-radius: inherit;
+  transition: width var(--bb-motion-base) var(--bb-ease);
+}
+
+.breakdown-value {
+  color: var(--bb-espresso);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.breakdown-count {
+  color: var(--bb-text-muted);
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* ── Quick action tiles ── */
@@ -235,7 +457,7 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 50%;
+  border-radius: var(--bb-radius-md);
   background: var(--bb-tan);
   transition: background-color var(--bb-motion-fast) var(--bb-ease);
 }
@@ -282,12 +504,44 @@
 
 @media (max-width: 700px) {
   .stat-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: var(--bb-space-3);
   }
 
-  .stat-card ion-card-title {
-    font-size: 30px;
+  .stat-card {
+    gap: var(--bb-space-3);
+    padding: var(--bb-space-3);
+  }
+
+  .stat-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+  }
+
+  .financial-toolbar {
+    padding: var(--bb-space-3);
+  }
+
+  .period-nav {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .period-current {
+    width: 100%;
+  }
+
+  .breakdown-row {
+    grid-template-columns: 52px minmax(36px, 1fr) 88px;
+  }
+
+  .breakdown-count {
+    display: none;
   }
 
   .quick-tile {

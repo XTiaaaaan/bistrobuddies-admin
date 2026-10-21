@@ -5,7 +5,7 @@
     aria-haspopup="dialog"
     [attr.aria-label]="unreadLabel()"
     [attr.aria-expanded]="alerts.panelOpen()"
-    (click)="toggle()"
+    (click)="toggle($event)"
   >
     <ion-icon
       slot="icon-only"
@@ -20,78 +20,132 @@
     }
   </ion-button>
 
-  @if (alerts.panelOpen()) {
-    <div
-      class="notifications-backdrop"
-      aria-hidden="true"
-      (click)="close()"
-    ></div>
-
-    <section
-      class="notifications-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Notifications"
-    >
-      <header class="notifications-head">
-        <div>
-          <h2>Notifications</h2>
-          <p class="notifications-count" aria-live="polite">
-            {{ alerts.unreadCount() }}
-            {{ alerts.unreadCount() === 1 ? 'unread alert' : 'unread alerts' }}
-          </p>
-        </div>
-        @if (alerts.unreadCount() > 0) {
-          <button
-            type="button"
-            class="notifications-action"
-            (click)="markAllRead()"
-          >
-            Mark all read
-          </button>
-        }
-      </header>
-
-      @if (alerts.notifications().length === 0) {
-        <div class="notifications-empty" role="status">
-          <ion-icon name="notifications-off-outline" aria-hidden="true"></ion-icon>
-          <p>No alerts yet. New orders and GCash proofs will appear here.</p>
-        </div>
-      } @else {
-        <ul class="notifications-list">
-          @for (item of alerts.notifications(); track item.id) {
-            <li>
+  <ion-popover
+    class="notifications-popover"
+    [isOpen]="alerts.panelOpen()"
+    [event]="panelEvent"
+    [showBackdrop]="true"
+    [backdropDismiss]="true"
+    [keepContentsMounted]="true"
+    side="bottom"
+    alignment="end"
+    aria-label="Notifications"
+    (didDismiss)="close()"
+  >
+    <ng-template>
+      <section class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
+        <header class="notifications-head">
+          <div>
+            <h2>Notifications</h2>
+            <p class="notifications-count" aria-live="polite">
+              {{ alerts.unreadCount() }}
+              {{
+                alerts.unreadCount() === 1
+                  ? 'unread alert'
+                  : 'unread alerts'
+              }}
+            </p>
+          </div>
+          <div class="notifications-head-actions">
+            @if (alerts.unreadCount() > 0) {
               <button
                 type="button"
-                class="notification-item"
-                [class.notification-item--unread]="!item.read"
-                (click)="openNotification(item)"
+                class="notifications-action"
+                (click)="markAllRead()"
               >
-                <span
-                  class="notification-dot"
-                  [class.notification-dot--unread]="!item.read"
-                  aria-hidden="true"
-                ></span>
-                <span class="notification-copy">
-                  <span class="notification-title">{{ item.title }}</span>
-                  <span class="notification-body">{{ item.body }}</span>
-                  <span class="notification-time">
-                    {{ timeLabel(item.createdAt) }}
-                  </span>
-                </span>
-                <span class="notification-kind">
-                  {{ alerts.kindLabel(item.kind) }}
-                </span>
+                Mark all read
               </button>
-            </li>
-          }
-        </ul>
-      }
+            }
+            <button
+              type="button"
+              class="notifications-close"
+              aria-label="Close notifications"
+              (click)="close()"
+            >
+              <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+            </button>
+          </div>
+        </header>
 
-      <p class="notifications-foot">
-        Open an alert to jump to its order. Payment status stays separate from
-        the order status.
-      </p>
-    </section>
-  }
+        @if (alerts.status() === 'loading' && alerts.notifications().length === 0) {
+          <div class="notifications-state" role="status">
+            <ion-spinner name="crescent" aria-hidden="true"></ion-spinner>
+            <p>Loading notifications...</p>
+          </div>
+        } @else if (alerts.status() === 'error' && alerts.notifications().length === 0) {
+          <div class="notifications-state" role="alert">
+            <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+            <p>Could not load notifications. Check your connection and try again.</p>
+            <button
+              type="button"
+              class="notifications-action notifications-retry"
+              (click)="retry()"
+            >
+              Retry
+            </button>
+          </div>
+        } @else if (alerts.notifications().length === 0) {
+          <div class="notifications-empty" role="status">
+            <ion-icon
+              name="notifications-off-outline"
+              aria-hidden="true"
+            ></ion-icon>
+            <p>No alerts yet. New orders and GCash proofs will appear here.</p>
+          </div>
+        } @else {
+          @if (alerts.status() === 'error') {
+            <p class="notifications-inline-error" role="alert">
+              Notifications may be out of date.
+              <button
+                type="button"
+                class="notifications-action notifications-retry"
+                (click)="retry()"
+              >
+                Retry
+              </button>
+            </p>
+          }
+          <ul class="notifications-list">
+            @for (item of alerts.notifications(); track item.id) {
+              <li>
+                <button
+                  type="button"
+                  class="notification-item"
+                  [class.notification-item--unread]="!item.read"
+                  [attr.aria-label]="
+                    (item.read ? 'Read: ' : 'Unread: ') +
+                    item.title +
+                    '. ' +
+                    item.body
+                  "
+                  (click)="openNotification(item)"
+                >
+                  <span
+                    class="notification-dot"
+                    [class.notification-dot--unread]="!item.read"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="notification-copy">
+                    <span class="notification-title">{{ item.title }}</span>
+                    <span class="notification-body">{{ item.body }}</span>
+                    <span class="notification-time">
+                      {{ timeLabel(item.createdAt) }}
+                    </span>
+                  </span>
+                  <span class="notification-kind">
+                    {{ alerts.kindLabel(item.kind) }}
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <p class="notifications-foot">
+          Open an alert to jump to its order. Payment status stays separate
+          from the order status.
+        </p>
+      </section>
+    </ng-template>
+  </ion-popover>
 </div>

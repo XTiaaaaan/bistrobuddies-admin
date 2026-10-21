@@ -27,32 +27,54 @@
         </ion-buttons>
       }
     </ion-toolbar>
+  </ion-header>
 
+  <div class="admin-body">
     @if (signedIn() && !onLogin()) {
       <nav class="admin-nav" aria-label="Admin navigation">
+        <span class="nav-group-label">Overview</span>
         <a
           routerLink="/dashboard"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          #dashboardLink="routerLinkActive"
+          [attr.aria-current]="dashboardLink.isActive ? 'page' : null"
         >
           <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
-          Dashboard
+          <span class="nav-label">Dashboard</span>
         </a>
-        <a routerLink="/products" routerLinkActive="active">
+
+        <span class="nav-group-label">Operations</span>
+        <a
+          routerLink="/products"
+          routerLinkActive="active"
+          #productsLink="routerLinkActive"
+          [attr.aria-current]="productsLink.isActive ? 'page' : null"
+        >
           <ion-icon name="cafe" aria-hidden="true"></ion-icon>
-          Products
+          <span class="nav-label">Products</span>
         </a>
-        <a routerLink="/orders" routerLinkActive="active">
+        <a
+          routerLink="/orders"
+          routerLinkActive="active"
+          #ordersLink="routerLinkActive"
+          [attr.aria-current]="ordersLink.isActive ? 'page' : null"
+        >
           <ion-icon name="receipt" aria-hidden="true"></ion-icon>
-          Orders
+          <span class="nav-label">Orders</span>
         </a>
-        <a routerLink="/messages" routerLinkActive="active">
+        <a
+          routerLink="/messages"
+          routerLinkActive="active"
+          #messagesLink="routerLinkActive"
+          [attr.aria-current]="messagesLink.isActive ? 'page' : null"
+        >
           <ion-icon name="mail-outline" aria-hidden="true"></ion-icon>
-          Customer Messages
+          <span class="nav-label">Customer Messages</span>
         </a>
       </nav>
     }
-  </ion-header>
 
-  <ion-router-outlet></ion-router-outlet>
+    <ion-router-outlet></ion-router-outlet>
+  </div>
 </ion-app>

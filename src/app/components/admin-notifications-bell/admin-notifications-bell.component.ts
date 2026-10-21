@@ -12,10 +12,14 @@ import {
   IonBadge,
   IonButton,
   IonIcon,
+  IonPopover,
+  IonSpinner,
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
+  alertCircleOutline,
+  closeOutline,
   notifications,
   notificationsOffOutline,
   notificationsOutline,
@@ -36,10 +40,12 @@ import {
   templateUrl: './admin-notifications-bell.component.html',
   styleUrls: ['./admin-notifications-bell.component.scss'],
   standalone: true,
-  imports: [IonBadge, IonButton, IonIcon],
+  imports: [IonBadge, IonButton, IonIcon, IonPopover, IonSpinner],
 })
 export class AdminNotificationsBellComponent implements OnInit, OnDestroy {
   readonly alerts = inject(AdminNotificationsService);
+  /** Click that opened the panel, used by the Ionic popover for anchoring. */
+  panelEvent: Event | undefined;
 
   readonly unreadLabel = computed(() => {
     const count = this.alerts.unreadCount();
@@ -53,7 +59,13 @@ export class AdminNotificationsBellComponent implements OnInit, OnDestroy {
   private lastToastId: string | null = null;
 
   constructor() {
-    addIcons({ notifications, notificationsOffOutline, notificationsOutline });
+    addIcons({
+      alertCircleOutline,
+      closeOutline,
+      notifications,
+      notificationsOffOutline,
+      notificationsOutline,
+    });
     effect(() => {
       const newest = this.alerts.notifications()[0];
       if (!newest || newest.read || newest.id === this.lastToastId) {
@@ -72,12 +84,19 @@ export class AdminNotificationsBellComponent implements OnInit, OnDestroy {
     this.alerts.stop();
   }
 
-  toggle(): void {
+  toggle(event?: Event): void {
+    if (!this.alerts.panelOpen()) {
+      this.panelEvent = event;
+    }
     this.alerts.togglePanel();
   }
 
   close(): void {
     this.alerts.closePanel();
+  }
+
+  retry(): void {
+    this.alerts.retry();
   }
 
   markAllRead(): void {
@@ -87,9 +106,12 @@ export class AdminNotificationsBellComponent implements OnInit, OnDestroy {
   openNotification(notification: AdminNotification): void {
     this.alerts.markRead(notification.id);
     this.close();
-    void this.router.navigate(['/orders'], {
-      queryParams: { order: notification.orderId },
-    });
+    const orderId = notification.orderId?.trim();
+    if (orderId) {
+      void this.router.navigate(['/orders'], {
+        queryParams: { order: orderId },
+      });
+    }
   }
 
   timeLabel(createdAt: number): string {

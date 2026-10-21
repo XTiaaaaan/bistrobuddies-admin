@@ -15,6 +15,8 @@ export interface AdminNotification extends AdminNotificationSeed {
   read: boolean;
 }
 
+export type AdminNotificationsStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 /** Keeps the in-memory list bounded while preserving the newest alerts. */
 const MAX_NOTIFICATIONS = 50;
 
@@ -33,12 +35,14 @@ export class AdminNotificationsService {
 
   private readonly notificationList = signal<AdminNotification[]>([]);
   private readonly panelOpenState = signal(false);
+  private readonly statusState = signal<AdminNotificationsStatus>('idle');
 
   readonly notifications = this.notificationList.asReadonly();
   readonly unreadCount = computed(
     () => this.notificationList().filter((item) => !item.read).length
   );
   readonly panelOpen = this.panelOpenState.asReadonly();
+  readonly status = this.statusState.asReadonly();
 
   private state: OrderNotificationState = createOrderNotificationState();
   private subscription: Subscription | null = null;
@@ -49,13 +53,28 @@ export class AdminNotificationsService {
       return;
     }
     this.state = createOrderNotificationState();
+    this.statusState.set('loading');
     this.subscription = this.ordersService.watchOrders().subscribe({
-      next: (orders) => this.ingestOrders(orders),
+      next: (orders) => {
+        this.statusState.set('ready');
+        this.ingestOrders(orders);
+      },
       error: () => {
-        // Firestore rules / connectivity errors stay silent: the admin still
-        // sees order-page errors, and alerts must never break navigation.
+        // The listener is finished after an error, so a later start() can
+        // retry. Alerts never break navigation.
+        this.subscription = null;
+        this.statusState.set('error');
       },
     });
+  }
+
+  /** Retries a failed listener without keeping stale alerts. */
+  retry(): void {
+    this.subscription?.unsubscribe();
+    this.subscription = null;
+    this.notificationList.set([]);
+    this.state = createOrderNotificationState();
+    this.start();
   }
 
   /** Stops listening and clears alerts (sign-out / loss of admin role). */
@@ -65,6 +84,7 @@ export class AdminNotificationsService {
     this.state = createOrderNotificationState();
     this.notificationList.set([]);
     this.panelOpenState.set(false);
+    this.statusState.set('idle');
   }
 
   /**
