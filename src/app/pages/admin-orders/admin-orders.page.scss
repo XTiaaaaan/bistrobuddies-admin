@@ -251,6 +251,7 @@
   padding: var(--bb-space-4);
   border-top: 1px solid var(--bb-border);
   min-width: 0;
+  container-type: inline-size;
 }
 
 .order-block h3 {
@@ -541,9 +542,10 @@
 
 .verify-details {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: var(--bb-space-2) var(--bb-space-4);
   margin: var(--bb-space-3) 0 0;
+  min-width: 0;
 }
 
 .verify-details dt {
@@ -606,6 +608,14 @@
   margin-top: var(--bb-space-3);
 }
 
+/* A refund adds a third block to the order grid, leaving the Payment column
+ * too narrow for a side-by-side proof layout. */
+@container (max-width: 300px) {
+  .proof-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .proof-image-column {
   display: flex;
   flex-direction: column;
@@ -651,10 +661,13 @@
 
 .proof-details {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* The Payment column narrows when the Refund block joins the order grid, so
+   * the column floor must never exceed the space actually available. */
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   align-content: start;
   gap: var(--bb-space-2) var(--bb-space-4);
   margin: 0;
+  min-width: 0;
 }
 
 .proof-details dt {
