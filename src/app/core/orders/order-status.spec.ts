@@ -28,7 +28,6 @@ describe('order status helpers', () => {
     expect(ORDER_STATUS_TRANSITIONS.PREPARING).toEqual(['READY', 'CANCELLED']);
     expect(ORDER_STATUS_TRANSITIONS.READY).toEqual([
       'OUT_FOR_DELIVERY',
-      'COMPLETED',
       'CANCELLED',
     ]);
     expect(ORDER_STATUS_TRANSITIONS.OUT_FOR_DELIVERY).toEqual([
@@ -43,7 +42,6 @@ describe('order status helpers', () => {
     expect(allowedNextStatuses('PENDING')).toEqual(['CONFIRMED', 'CANCELLED']);
     expect(allowedNextStatuses('READY')).toEqual([
       'OUT_FOR_DELIVERY',
-      'COMPLETED',
       'CANCELLED',
     ]);
     expect(allowedNextStatuses('OUT_FOR_DELIVERY')).toEqual([
@@ -63,6 +61,7 @@ describe('order status helpers', () => {
     expect(canTransition('PENDING', 'PREPARING')).toBe(false);
     expect(canTransition('PREPARING', 'OUT_FOR_DELIVERY')).toBe(false);
     expect(canTransition('READY', 'OUT_FOR_DELIVERY')).toBe(true);
+    expect(canTransition('READY', 'COMPLETED')).toBe(false);
     expect(canTransition('OUT_FOR_DELIVERY', 'COMPLETED')).toBe(true);
     expect(canTransition('COMPLETED', 'PENDING')).toBe(false);
     expect(canTransition('CANCELLED', 'READY')).toBe(false);
@@ -107,9 +106,13 @@ describe('order status helpers', () => {
     }
   });
 
-  it('labels and colors statuses for display', () => {
-    expect(orderStatusLabel('PENDING')).toBe('Pending');
+  it('labels every workflow status consistently', () => {
+    expect(orderStatusLabel('CONFIRMED')).toBe('Confirmed');
+    expect(orderStatusLabel('PREPARING')).toBe('Preparing');
+    expect(orderStatusLabel('READY')).toBe('Ready');
     expect(orderStatusLabel('OUT_FOR_DELIVERY')).toBe('On the Way');
+    expect(orderStatusLabel('COMPLETED')).toBe('Delivered');
+    expect(orderStatusLabel('PENDING')).toBe('Pending');
     expect(orderStatusLabel('CANCELLED')).toBe('Cancelled');
     expect(orderStatusLabel('SOMETHING_ELSE')).toBe('SOMETHING_ELSE');
     expect(orderStatusColor('PENDING')).toBe('warning');

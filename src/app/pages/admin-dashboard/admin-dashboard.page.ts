@@ -4,9 +4,6 @@ import { RouterLink } from '@angular/router';
 import {
   IonButton,
   IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
   IonContent,
   IonIcon,
   IonSpinner,
@@ -16,8 +13,12 @@ import {
   add,
   alertCircle,
   cafe,
+  calendarOutline,
+  cashOutline,
   checkmarkCircle,
   checkmarkDoneOutline,
+  chevronBackOutline,
+  chevronForwardOutline,
   closeCircle,
   mailOutline,
   receipt,
@@ -31,7 +32,19 @@ import { ProductsService } from '@shared/services/products.service';
 import { OrdersService } from '@shared/services/orders.service';
 import { isOrderStatus } from '@shared/core/orders/order-status';
 import { canConfirmPayment } from '@shared/core/orders/payment-decision';
-import { refundStatusOf } from '@shared/core/orders/refund';
+import { refundStatusOf, showRefundStatus } from '@shared/core/orders/refund';
+import { formatPhp } from '@shared/core/format/format';
+import {
+  FinancialPeriod,
+  RevenueBucket,
+  addPeriods,
+  financialPeriodRangeLabel,
+  financialPeriodTitle,
+  periodRange,
+  revenueBreakdown,
+  startOfPeriod,
+  summarizeCollectedRevenue,
+} from '@shared/core/finance/financial-analytics';
 
 /** Order statuses that count as "being worked on" right now. */
 const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
@@ -45,9 +58,6 @@ const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
     RouterLink,
     IonButton,
     IonCard,
-    IonCardContent,
-    IonCardHeader,
-    IonCardTitle,
     IonContent,
     IonIcon,
     IonSpinner,
@@ -95,8 +105,10 @@ export class AdminDashboardPage implements OnInit {
   /** Refunds opened but not yet completed (money not yet confirmed sent). */
   readonly pendingRefundCount = computed(
     () =>
-      this.orders().filter((order) => refundStatusOf(order) === 'REFUND_PENDING')
-        .length
+      this.orders().filter(
+        (order) =>
+          showRefundStatus(order) && refundStatusOf(order) === 'REFUND_PENDING'
+      ).length
   );
   /** Orders whose status is not part of the current vocabulary. */
   readonly otherStatusCount = computed(
@@ -108,6 +120,37 @@ export class AdminDashboardPage implements OnInit {
     () => this.gcashToVerifyCount() > 0 || this.pendingRefundCount() > 0
   );
 
+  readonly financialPeriod = signal<FinancialPeriod>('month');
+  readonly financialAnchor = signal(startOfPeriod('month', new Date()));
+  private readonly financialRange = computed(() =>
+    periodRange(this.financialPeriod(), this.financialAnchor())
+  );
+  readonly financialSummary = computed(() =>
+    summarizeCollectedRevenue(this.orders(), this.financialRange())
+  );
+  readonly financialTitle = computed(() =>
+    financialPeriodTitle(this.financialPeriod(), this.financialAnchor())
+  );
+  readonly financialRangeLabel = computed(() =>
+    financialPeriodRangeLabel(
+      this.financialPeriod(),
+      this.financialAnchor()
+    )
+  );
+  readonly financialBreakdown = computed(() =>
+    revenueBreakdown(
+      this.orders(),
+      this.financialPeriod(),
+      this.financialAnchor()
+    )
+  );
+  private readonly financialBreakdownMax = computed(() =>
+    Math.max(
+      0,
+      ...this.financialBreakdown().map((bucket) => bucket.revenue)
+    )
+  );
+
   private readonly productsService = inject(ProductsService);
   private readonly ordersService = inject(OrdersService);
   private readonly destroyRef = inject(DestroyRef);
@@ -117,8 +160,12 @@ export class AdminDashboardPage implements OnInit {
       add,
       alertCircle,
       cafe,
+      calendarOutline,
+      cashOutline,
       checkmarkCircle,
       checkmarkDoneOutline,
+      chevronBackOutline,
+      chevronForwardOutline,
       closeCircle,
       mailOutline,
       receipt,
@@ -153,4 +200,27 @@ export class AdminDashboardPage implements OnInit {
         error: () => this.ordersStatus.set('error'),
       });
   }
+
+  setFinancialPeriod(period: FinancialPeriod): void {
+    this.financialPeriod.set(period);
+    this.financialAnchor.set(startOfPeriod(period, new Date()));
+  }
+
+  shiftFinancialPeriod(amount: number): void {
+    this.financialAnchor.update((anchor) =>
+      addPeriods(this.financialPeriod(), anchor, amount)
+    );
+  }
+
+  resetFinancialPeriod(): void {
+    const period = this.financialPeriod();
+    this.financialAnchor.set(startOfPeriod(period, new Date()));
+  }
+
+  breakdownShare(bucket: RevenueBucket): number {
+    const max = this.financialBreakdownMax();
+    return max > 0 ? (bucket.revenue / max) * 100 : 0;
+  }
+
+  formatMoney = formatPhp;
 }

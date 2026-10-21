@@ -1,40 +1,60 @@
+/*
+ * Admin sign-in — a single espresso/cream card so the brand hero and the form
+ * read as one surface. Colours and spacing come from the shared `--bb-*`
+ * tokens; no behaviour lives here.
+ */
+
 .admin-login-content {
-  --background: var(--admin-bg);
+  --background: radial-gradient(
+      900px 420px at 50% -80px,
+      rgba(230, 213, 192, 0.62),
+      transparent 64%
+    ),
+    var(--bb-cream);
 }
 
 .admin-login-page {
   min-height: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 32px 16px;
+  padding: 40px var(--bb-space-4);
   box-sizing: border-box;
 }
 
-/*
- * Espresso brand hero — same treatment as the customer app's login screen:
- * a dark rounded panel with the circular logo badge and serif wordmark.
- */
-.admin-login-hero {
+.admin-login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+  box-shadow: var(--bb-shadow-raised);
+  overflow: hidden;
+}
+
+/* ── Brand hero ── */
+
+.admin-login-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--bb-espresso);
-  border-radius: var(--bb-radius-lg);
-  padding: 26px 16px 22px;
-  box-shadow: 0 10px 26px rgba(59, 35, 20, 0.2);
+  padding: 30px var(--bb-space-4) 24px;
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(230, 213, 192, 0.18),
+      transparent 62%
+    ),
+    var(--bb-espresso);
 }
 
 .admin-login-logo {
-  width: 76px;
-  height: 76px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
   border-radius: 50%;
   background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
 .admin-login-brand {
@@ -42,12 +62,12 @@
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .admin-login-brand .brand-bistro,
 .admin-login-brand .brand-buddies {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 26px;
 }
 
@@ -60,41 +80,37 @@
 }
 
 .admin-login-tagline {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   font-size: 10px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(245, 235, 224, 0.85);
+  color: rgba(245, 235, 224, 0.82);
   text-align: center;
 }
 
-.admin-login-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--bb-radius-card);
-  padding: 26px 24px;
-  box-shadow: var(--bb-shadow-card);
-  box-sizing: border-box;
+/* ── Form body ── */
+
+.admin-login-body {
+  padding: 28px 26px 24px;
 }
 
 .admin-login-title {
   margin: 0 0 6px;
-  font-size: 24px;
+  font-size: var(--bb-text-xl);
   font-weight: 600;
   text-align: center;
 }
 
 .admin-login-subtitle {
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
+  line-height: 1.5;
   color: var(--bb-text-muted);
 }
 
 .admin-login-fields {
-  margin: 0 0 16px;
+  margin: 0 0 var(--bb-space-4);
   padding: 0;
   background: transparent;
 }
@@ -106,12 +122,17 @@
   --min-height: 58px;
   --padding-start: 14px;
   --inner-padding-end: 14px;
-  margin-bottom: 12px;
-  transition: box-shadow var(--bb-motion-fast) var(--bb-ease);
+  margin-bottom: var(--bb-space-3);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-md);
+  transition:
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    box-shadow var(--bb-motion-fast) var(--bb-ease);
 }
 
 .admin-login-fields ion-item:focus-within {
-  box-shadow: 0 0 0 3px rgba(166, 123, 91, 0.2);
+  border-color: var(--bb-coffee);
+  box-shadow: var(--bb-focus-ring);
 }
 
 .admin-login-submit {
@@ -119,6 +140,31 @@
   --background-hover: #4e3626;
   --border-radius: var(--bb-radius-md);
   height: 50px;
+  margin: 0;
   font-weight: 700;
   letter-spacing: 0.3px;
+}
+
+.admin-login-note {
+  margin: var(--bb-space-4) 0 0;
+  padding-top: var(--bb-space-3);
+  border-top: 1px solid var(--bb-border);
+  text-align: center;
+  font-size: var(--bb-text-sm);
+  line-height: 1.5;
+  color: var(--bb-text-soft);
+}
+
+@media (max-width: 480px) {
+  .admin-login-page {
+    padding: var(--bb-space-4) var(--bb-space-3);
+  }
+
+  .admin-login-hero {
+    padding: 26px var(--bb-space-3) 20px;
+  }
+
+  .admin-login-body {
+    padding: var(--bb-space-5) var(--bb-space-4) var(--bb-space-4);
+  }
 }

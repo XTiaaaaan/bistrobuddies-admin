@@ -24,25 +24,32 @@ function alert(overrides: Partial<AdminNotification> = {}): AdminNotification {
 describe('AdminNotificationsBellComponent', () => {
   let items: ReturnType<typeof signal<AdminNotification[]>>;
   let panelOpen: ReturnType<typeof signal<boolean>>;
+  let status: ReturnType<typeof signal<'idle' | 'loading' | 'ready' | 'error'>>;
   let navigate: ReturnType<typeof vi.fn>;
   let markRead: ReturnType<typeof vi.fn>;
   let markAllRead: ReturnType<typeof vi.fn>;
   let start: ReturnType<typeof vi.fn>;
   let stop: ReturnType<typeof vi.fn>;
+  let retry: ReturnType<typeof vi.fn>;
   let createToast: ReturnType<typeof vi.fn>;
 
-  function setup(seed: AdminNotification[] = []): {
+  function setup(
+    seed: AdminNotification[] = [],
+    initialState: 'idle' | 'loading' | 'ready' | 'error' = 'ready'
+  ): {
     fixture: ComponentFixture<AdminNotificationsBellComponent>;
     element: HTMLElement;
     component: AdminNotificationsBellComponent;
   } {
     items = signal(seed);
     panelOpen = signal(false);
+    status = signal(initialState);
     navigate = vi.fn().mockResolvedValue(true);
     markRead = vi.fn();
     markAllRead = vi.fn();
     start = vi.fn();
     stop = vi.fn();
+    retry = vi.fn();
     createToast = vi.fn().mockResolvedValue({
       present: vi.fn().mockResolvedValue(undefined),
     });
@@ -63,8 +70,10 @@ describe('AdminNotificationsBellComponent', () => {
               () => items().filter((item) => !item.read).length
             ),
             panelOpen: panelOpen.asReadonly(),
+            status: status.asReadonly(),
             start,
             stop,
+            retry,
             togglePanel: () =>
               panelOpen.update((open) => {
                 return !open;
@@ -103,16 +112,69 @@ describe('AdminNotificationsBellComponent', () => {
     ]);
 
     expect(element.querySelector('.bell-count')?.textContent).toContain('2');
-    expect(element.querySelector('.notifications-panel')).toBeNull();
+    expect(element.querySelector('ion-popover')).not.toBeNull();
 
     component.toggle();
     TestBed.tick();
 
+    expect(panelOpen()).toBe(true);
     expect(element.querySelector('.notifications-panel')).not.toBeNull();
     expect(element.querySelectorAll('.notification-item')).toHaveLength(2);
     expect(element.querySelector('.notifications-count')?.textContent).toContain(
       '2 unread alerts'
     );
+  });
+
+  it('opens and closes the panel from the bell button', () => {
+    const { element } = setup([alert()]);
+    const bell = element.querySelector<HTMLElement>('.bell-button');
+
+    bell?.click();
+    TestBed.tick();
+
+    expect(panelOpen()).toBe(true);
+    expect(element.querySelector('.notifications-panel')).not.toBeNull();
+    expect(bell?.getAttribute('aria-expanded')).toBe('true');
+
+    bell?.click();
+    TestBed.tick();
+
+    expect(panelOpen()).toBe(false);
+    expect(bell?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes the panel from its close button', () => {
+    const { element, component } = setup([alert()]);
+    component.toggle();
+    TestBed.tick();
+
+    element.querySelector<HTMLButtonElement>('.notifications-close')?.click();
+    TestBed.tick();
+
+    expect(panelOpen()).toBe(false);
+  });
+
+  it('shows a loading state while the order listener starts', () => {
+    const { element, component } = setup([], 'loading');
+    component.toggle();
+    TestBed.tick();
+
+    expect(element.querySelector('.notifications-state')?.textContent).toContain(
+      'Loading notifications'
+    );
+  });
+
+  it('shows an error state and retries the listener', () => {
+    const { element, component } = setup([], 'error');
+    component.toggle();
+    TestBed.tick();
+
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(
+      'Could not load notifications'
+    );
+    element.querySelector<HTMLButtonElement>('.notifications-retry')?.click();
+
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it('marks an alert read and deep-links to its order', () => {

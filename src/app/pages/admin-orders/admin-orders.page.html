@@ -48,7 +48,7 @@
           (click)="applyQuickFilter('completed')"
         >
           <strong>{{ completedCount() }}</strong>
-          <span>Completed</span>
+          <span>Delivered</span>
         </button>
         <button
           type="button"
@@ -77,6 +77,7 @@
     <section class="filter-bar" aria-label="Order search and filters">
       <ion-searchbar
         class="filter-search"
+        [class.filter-search--active]="search().length > 0"
         placeholder="Search order ID, customer, phone, address or item"
         aria-label="Search orders"
         debounce="300"
@@ -86,6 +87,7 @@
 
       <ion-select
         class="filter-select"
+        [class.filter-select--active]="statusFilter() !== 'ALL'"
         label="Status"
         labelPlacement="stacked"
         interface="popover"
@@ -103,6 +105,7 @@
 
       <ion-select
         class="filter-select"
+        [class.filter-select--active]="paymentStatusFilter() !== 'ALL'"
         label="Payment status"
         labelPlacement="stacked"
         interface="popover"
@@ -118,6 +121,7 @@
 
       <ion-select
         class="filter-select"
+        [class.filter-select--active]="paymentMethodFilter() !== 'ALL'"
         label="Payment method"
         labelPlacement="stacked"
         interface="popover"
@@ -132,6 +136,7 @@
 
       <ion-select
         class="filter-select"
+        [class.filter-select--active]="dateRangeFilter() !== 'ALL'"
         label="Date"
         labelPlacement="stacked"
         interface="popover"
@@ -178,7 +183,7 @@
       </div>
     } @else if (visibleOrders().length === 0) {
       <div class="admin-state" role="status">
-        <ion-icon name="receipt"></ion-icon>
+        <ion-icon name="search"></ion-icon>
         <h3>No matching orders</h3>
         <p>Nothing matches the current search and filters.</p>
         <ion-button fill="outline" (click)="clearFilters()">
@@ -191,29 +196,33 @@
           <ion-card
             class="order-card"
             [id]="'order-card-' + order.id"
+            [attr.data-order-status]="order.orderStatus"
             [class.order-card--cancelled]="isCancelled(order)"
             [class.order-card--focused]="focusedOrderId() === order.id"
           >
             <div class="order-head">
-              <div class="order-id">
-                <span class="order-id-label">Order</span>
-                <strong [title]="order.id">{{ formatId(order.id) }}</strong>
+              <div class="order-head-lead">
+                <div class="order-id">
+                  <span class="order-id-label">Order</span>
+                  <strong [title]="order.id">{{ formatId(order.id) }}</strong>
+                </div>
+                <p class="order-date">{{ formatDate(order.createdAt) }}</p>
               </div>
+
               <div class="order-badges">
                 <ion-badge [color]="statusColor(order.orderStatus)">
                   {{ statusLabel(order.orderStatus) }}
                 </ion-badge>
-                <ion-badge
-                  [color]="paymentStatusColor(order.paymentStatus)"
-                  [title]="order.paymentStatus"
-                >
-                  Payment: {{ paymentStatusLabel(order.paymentStatus) }}
-                </ion-badge>
+                @if (showsPaymentStatus(order)) {
+                  <ion-badge
+                    [color]="paymentStatusColor(order.paymentStatus)"
+                    [title]="order.paymentStatus"
+                  >
+                    Payment: {{ paymentStatusLabel(order.paymentStatus) }}
+                  </ion-badge>
+                }
                 <ion-badge [color]="paymentMethodColor(order.paymentMethod)">
                   {{ order.paymentMethod }}
-                </ion-badge>
-                <ion-badge color="tertiary">
-                  {{ fulfillmentLabel(order) }}
                 </ion-badge>
                 @if (showsRefundStatus(order)) {
                   <ion-badge [color]="refundColor(refundStatus(order))">
@@ -221,20 +230,24 @@
                   </ion-badge>
                 }
               </div>
-              <div class="order-date">{{ formatDate(order.createdAt) }}</div>
+
+              <div class="order-head-total">
+                <span class="order-total-label">Total</span>
+                <strong>{{ formatMoney(order.total) }}</strong>
+              </div>
             </div>
 
             <div class="order-grid">
               <section class="order-block">
                 <h3>Customer</h3>
-                <p>
-                  <strong>{{ customerName(order) }}</strong>
+                <p class="order-customer-name">
+                  {{ customerName(order) }}
                 </p>
                 @if (customerPhone(order)) {
-                  <p>{{ customerPhone(order) }}</p>
+                  <p class="order-detail-line">{{ customerPhone(order) }}</p>
                 }
                 @if (customerEmail(order)) {
-                  <p>{{ customerEmail(order) }}</p>
+                  <p class="order-detail-line">{{ customerEmail(order) }}</p>
                 }
               </section>
 
@@ -242,7 +255,7 @@
                 <h3>Delivery address</h3>
                 @if (addressLines(order).length > 0) {
                   @for (line of addressLines(order); track $index) {
-                    <p>{{ line }}</p>
+                    <p class="order-detail-line">{{ line }}</p>
                   }
                 } @else {
                   <p class="muted">No delivery address recorded.</p>
@@ -253,12 +266,18 @@
             @if (order.customerComment) {
               <section class="order-block">
                 <h3>Customer comment</h3>
-                <p>{{ order.customerComment }}</p>
+                <p class="order-comment">{{ order.customerComment }}</p>
               </section>
             }
 
             <section class="order-block">
-              <h3>Items</h3>
+              <div class="order-block-head">
+                <h3>Items</h3>
+                <span class="order-block-meta">
+                  {{ itemsOf(order).length }}
+                  {{ itemsOf(order).length === 1 ? "item" : "items" }}
+                </span>
+              </div>
               <div class="table-scroll">
                 <table class="order-items">
                   <thead>
@@ -298,8 +317,12 @@
                 </table>
               </div>
               <div class="totals">
-                <span>Subtotal {{ formatMoney(order.subtotal) }}</span>
-                <span>Delivery fee {{ formatMoney(order.deliveryFee) }}</span>
+                <span class="totals-line"
+                  >Subtotal <b>{{ formatMoney(order.subtotal) }}</b></span
+                >
+                <span class="totals-line"
+                  >Delivery fee <b>{{ formatMoney(order.deliveryFee) }}</b></span
+                >
                 <span class="totals-total"
                   >Total {{ formatMoney(order.total) }}</span
                 >
@@ -319,40 +342,65 @@
                   <p class="muted cancelled-note">
                     {{ cancelledOrderMessage }}
                   </p>
-                } @else if (allowedNext(order).length > 0) {
-                  <div class="status-actions">
-                    @for (next of allowedNext(order); track next) {
-                      <ion-button
-                        size="small"
-                        [disabled]="busyId() === order.id"
-                        (click)="requestStatusChange(order, next)"
-                      >
-                        Move to {{ statusLabel(next) }}
-                      </ion-button>
-                    }
-                  </div>
                 } @else {
-                  <p class="muted">
-                    {{ statusLabel(order.orderStatus) }} is a final status — no
-                    further changes are possible.
-                  </p>
+                  <ol class="status-rail" aria-label="Order progress">
+                    @for (step of statusSteps; track step.status) {
+                      <li
+                        class="status-rail-step"
+                        [class.status-rail-step--current]="
+                          order.orderStatus === step.status
+                        "
+                        [class.status-rail-step--done]="
+                          isStepReached(order, step.status)
+                        "
+                      >
+                        <span class="status-rail-dot" aria-hidden="true"></span>
+                        <span class="status-rail-label">{{ step.label }}</span>
+                      </li>
+                    }
+                  </ol>
+                  @if (allowedNext(order).length > 0) {
+                    <div class="status-actions">
+                      @for (next of allowedNext(order); track next) {
+                        <ion-button
+                          size="small"
+                          class="order-action"
+                          [class.order-action--cancel]="next === 'CANCELLED'"
+                          [class.order-action--advance]="next !== 'CANCELLED'"
+                          [color]="next === 'CANCELLED' ? 'danger' : 'primary'"
+                          [fill]="next === 'CANCELLED' ? 'outline' : 'solid'"
+                          [disabled]="busyId() === order.id"
+                          (click)="requestStatusChange(order, next)"
+                        >
+                          Move to {{ statusLabel(next) }}
+                        </ion-button>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted">
+                      {{ statusLabel(order.orderStatus) }} is a final status — no
+                      further changes are possible.
+                    </p>
+                  }
                 }
               </section>
 
               <section class="order-block">
                 <h3>Payment</h3>
-                <p>
+                <p class="status-line">
                   Method: <strong>{{ order.paymentMethod }}</strong>
                 </p>
-                <p class="status-line">
-                  Status:
-                  <ion-badge
-                    [color]="paymentStatusColor(order.paymentStatus)"
-                    [title]="order.paymentStatus"
-                  >
-                    {{ paymentStatusLabel(order.paymentStatus) }}
-                  </ion-badge>
-                </p>
+                @if (showsPaymentStatus(order)) {
+                  <p class="status-line">
+                    Status:
+                    <ion-badge
+                      [color]="paymentStatusColor(order.paymentStatus)"
+                      [title]="order.paymentStatus"
+                    >
+                      {{ paymentStatusLabel(order.paymentStatus) }}
+                    </ion-badge>
+                  </p>
+                }
                 @if (isGcashOrder(order)) {
                   @if (paymentProof(order); as proof) {
                     <div
@@ -442,32 +490,11 @@
                       }
                       @if (order.paymentDecision; as decision) {
                         <p class="proof-decision">
-                          {{ paymentDecisionLabel(decision.decision) }} by
-                          {{ decision.decidedBy || 'an administrator' }}
+                          {{ paymentDecisionLabel(decision.decision) }}
                           @if (decision.decidedAt) {
                             on {{ formatDate(decision.decidedAt) }}
                           }
                         </p>
-                      }
-                      @if (paymentAuditEntries(order).length > 0) {
-                        <details class="payment-audit">
-                          <summary>
-                            Payment audit history ({{
-                              paymentAuditEntries(order).length
-                            }})
-                          </summary>
-                          <ul>
-                            @for (
-                              entry of paymentAuditEntries(order);
-                              track $index
-                            ) {
-                              <li>
-                                {{ entry.from }} to {{ entry.to }} -
-                                {{ entry.actorRole }}
-                              </li>
-                            }
-                          </ul>
-                        </details>
                       }
                     </div>
                   } @else {
@@ -479,7 +506,11 @@
                   }
 
                   @if (canConfirmPayment(order) || canRejectPayment(order)) {
-                    <div class="verify-panel" role="group" aria-label="GCash verification">
+                    <div
+                      class="verify-panel"
+                      role="group"
+                      aria-label="GCash verification"
+                    >
                       <p class="verify-head">
                         <ion-icon
                           name="shield-checkmark-outline"
@@ -512,6 +543,7 @@
                         @if (canConfirmPayment(order)) {
                           <ion-button
                             size="small"
+                            class="payment-action payment-action--confirm"
                             color="success"
                             [disabled]="
                               isPaymentBusy(order) || busyId() === order.id
@@ -524,6 +556,7 @@
                         @if (canRejectPayment(order)) {
                           <ion-button
                             size="small"
+                            class="payment-action payment-action--reject"
                             color="danger"
                             fill="outline"
                             [disabled]="
@@ -601,6 +634,7 @@
                       @if (canStartRefund(order)) {
                         <ion-button
                           size="small"
+                          class="refund-action refund-action--start"
                           [disabled]="
                             isRefundBusy(order) || busyId() === order.id
                           "
@@ -612,6 +646,7 @@
                       @if (canCompleteRefund(order)) {
                         <ion-button
                           size="small"
+                          class="refund-action refund-action--complete"
                           color="success"
                           [disabled]="
                             isRefundBusy(order) || busyId() === order.id

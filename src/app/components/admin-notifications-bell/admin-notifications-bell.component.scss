@@ -30,27 +30,27 @@
   pointer-events: none;
 }
 
-.notifications-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(20, 15, 12, 0.32);
+/*
+ * The panel lives inside an Ionic popover overlay rather than the toolbar:
+ * ion-toolbar uses paint containment/overflow clipping, which previously
+ * made a fixed-position dropdown open off-screen and appear broken.
+ */
+.notifications-popover {
+  --width: min(380px, calc(100vw - 16px));
+  --max-height: min(75vh, 560px);
+  --box-shadow: var(--bb-shadow-raised);
 }
 
 .notifications-panel {
-  position: fixed;
-  top: 60px;
-  right: 16px;
-  z-index: 9999;
   display: flex;
   flex-direction: column;
-  width: min(380px, calc(100vw - 24px));
-  max-height: min(70vh, 560px);
+  width: 100%;
+  max-height: min(75vh, 560px);
   background: var(--bb-surface);
   border: 1px solid var(--bb-border-strong);
   border-radius: var(--bb-radius-card);
-  box-shadow: var(--bb-shadow-raised);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .notifications-head {
@@ -66,7 +66,7 @@
 .notifications-head h2 {
   margin: 0;
   color: #ffffff;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 17px;
   font-weight: 600;
 }
@@ -75,6 +75,12 @@
   margin: 3px 0 0;
   color: var(--bb-tan);
   font-size: 12px;
+}
+
+.notifications-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .notifications-action {
@@ -89,9 +95,72 @@
   cursor: pointer;
 }
 
-.notifications-action:hover {
+.notifications-action:hover,
+.notifications-action:focus-visible {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+.notifications-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #f0e4d6;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notifications-close:hover,
+.notifications-close:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.notifications-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bb-space-2);
+  padding: var(--bb-space-5) var(--bb-space-4);
+  color: var(--bb-text-muted);
+  text-align: center;
+}
+
+.notifications-state ion-icon {
+  font-size: 34px;
+  color: var(--bb-coffee);
+}
+
+.notifications-state p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notifications-retry {
+  border-color: var(--bb-border-strong);
+  color: var(--bb-coffee);
+}
+
+.notifications-inline-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bb-space-2);
+  margin: 0;
+  padding: var(--bb-space-2) var(--bb-space-4);
+  border-bottom: 1px solid var(--bb-border);
+  background: rgba(212, 169, 106, 0.16);
+  color: var(--bb-text-muted);
+  font-size: 12px;
 }
 
 .notifications-list {
@@ -210,10 +279,12 @@
 }
 
 @media (max-width: 560px) {
+  .notifications-popover {
+    --width: calc(100vw - 16px);
+    --max-height: min(80vh, 560px);
+  }
+
   .notifications-panel {
-    top: 56px;
-    right: 8px;
-    left: 8px;
-    width: auto;
+    max-height: min(80vh, 560px);
   }
 }

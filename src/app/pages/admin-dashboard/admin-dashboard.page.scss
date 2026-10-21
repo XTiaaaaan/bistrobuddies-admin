@@ -1,39 +1,28 @@
-/* ── Section layout ── */
+/*
+ * Dashboard — metric cards, collected-revenue analytics and quick actions.
+ * Layout is chosen per section: comparable metric cards share equal widths
+ * and heights, while the financial breakdown keeps its own reading rhythm.
+ */
 
 .stat-section {
-  margin-bottom: var(--bb-space-5);
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--bb-space-3);
-  margin-bottom: var(--bb-space-3);
+  margin-bottom: var(--bb-space-6);
 }
 
 .section-head h2 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  color: var(--bb-espresso);
+  letter-spacing: -0.01em;
 }
 
-.section-meta {
-  font-size: 13px;
-  color: var(--bb-text-muted);
-}
-
-/* "Updates live" reads as a quiet pill with a soft green pulse dot. */
+/* "Updates live" reads as a quiet pill with a soft green dot. */
 .section-meta--live {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 4px 12px;
+  border: 1px solid var(--bb-success-border);
   border-radius: var(--bb-radius-pill);
   background: var(--bb-success-soft-bg);
   color: var(--bb-success-soft-text);
-  font-size: 12px;
+  font-size: var(--bb-text-sm);
   font-weight: 600;
 }
 
@@ -54,7 +43,7 @@
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-card);
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   color: var(--bb-text-muted);
 }
 
@@ -65,7 +54,7 @@
 }
 
 .section-note {
-  margin: -8px 0 var(--bb-space-4);
+  margin: calc(var(--bb-space-2) * -1) 0 var(--bb-space-4);
   font-size: 13px;
   color: var(--bb-text-muted);
 }
@@ -76,7 +65,7 @@
   margin-bottom: var(--bb-space-2);
   padding: var(--bb-space-4);
   background: var(--bb-warning-soft-bg);
-  border: 1px solid rgba(166, 123, 91, 0.32);
+  border: 1px solid var(--bb-warning-border);
   border-radius: var(--bb-radius-card);
 }
 
@@ -85,8 +74,7 @@
   align-items: center;
   gap: var(--bb-space-2);
   margin: 0 0 var(--bb-space-2);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   font-weight: 700;
   color: var(--bb-warning-soft-text);
 }
@@ -101,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--bb-text-base);
   line-height: 1.5;
   color: var(--bb-text);
 }
@@ -111,58 +99,80 @@
   font-weight: 700;
 }
 
-/* ── Stat grid and cards ── */
+/* ── Metric cards ──
+ *
+ * Six comparable order cards arrange as two balanced rows of three on wide
+ * screens, then 2-up and 1-up as the viewport narrows. Values keep their
+ * original calculations — this is presentation only.
+ */
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--bb-space-4);
   margin-bottom: var(--bb-space-5);
 }
 
 .stat-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
+  gap: var(--bb-space-4);
   height: 100%;
-  padding: var(--bb-space-4) var(--bb-space-3);
-  text-align: center;
+  padding: 18px;
+  text-align: left;
+  transition:
+    box-shadow var(--bb-motion-fast) var(--bb-ease),
+    border-color var(--bb-motion-fast) var(--bb-ease),
+    transform var(--bb-motion-fast) var(--bb-ease);
+}
+
+@media (hover: hover) {
+  .stat-card:hover {
+    border-color: var(--bb-border-strong);
+    box-shadow: var(--bb-shadow-raised);
+    transform: translateY(-1px);
+  }
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--bb-radius-md);
   background: var(--bb-tan);
-  margin-bottom: var(--bb-space-1);
 }
 
 .stat-icon ion-icon {
-  font-size: 22px;
+  font-size: 24px;
   color: var(--bb-espresso);
 }
 
-.stat-card ion-card-header {
-  padding: var(--bb-space-1) 0 2px;
+.stat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.stat-card ion-card-title {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 38px;
+.stat-value {
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-2xl);
   font-weight: 600;
   line-height: 1.1;
   color: var(--bb-espresso);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
-.stat-card ion-card-content {
+.stat-label {
+  font-size: var(--bb-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 12px;
-  font-weight: 600;
   color: var(--bb-text-muted);
 }
 
@@ -174,10 +184,6 @@
   color: var(--bb-success);
 }
 
-.stat-available ion-card-title {
-  color: var(--bb-success);
-}
-
 .stat-unavailable .stat-icon {
   background: var(--bb-danger-soft-bg);
 }
@@ -186,11 +192,21 @@
   color: var(--bb-danger);
 }
 
-.stat-unavailable ion-card-title {
-  color: var(--bb-danger);
+.stat-pending .stat-icon,
+.stat-progress .stat-icon {
+  background: var(--bb-info-soft-bg);
+}
+
+.stat-pending .stat-icon ion-icon,
+.stat-progress .stat-icon ion-icon {
+  color: var(--bb-info-soft-text);
 }
 
 /* GCash cards light up only when there is something to verify. */
+.stat-card.stat-attention {
+  border-color: var(--bb-warning-border);
+}
+
 .stat-attention .stat-icon {
   background: var(--bb-warning-soft-bg);
 }
@@ -199,16 +215,211 @@
   color: var(--bb-warning-soft-text);
 }
 
-.stat-attention ion-card-title {
+/* ── Financial analytics ── */
+
+.financial-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bb-space-3);
+  margin-bottom: var(--bb-space-3);
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+}
+
+.period-tabs {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bb-tan);
+  border-radius: var(--bb-radius-pill);
+}
+
+.period-tab {
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--bb-radius-pill);
+  background: transparent;
+  color: var(--bb-espresso);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    color var(--bb-motion-fast) var(--bb-ease);
+}
+
+.period-tab--active {
+  background: var(--bb-espresso);
+  color: #ffffff;
+  box-shadow: var(--bb-shadow-card);
+}
+
+.period-tab:focus-visible {
+  outline: 2px solid var(--bb-coffee);
+  outline-offset: 2px;
+}
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-1);
+  margin-left: auto;
+}
+
+.period-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 168px;
+  text-align: center;
+}
+
+.period-title {
+  font-family: var(--bb-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.period-range {
+  font-size: var(--bb-text-sm);
+  color: var(--bb-text-muted);
+}
+
+.period-arrow {
+  --color: var(--bb-espresso);
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: 32px;
+  margin: 0;
+}
+
+.period-current {
+  --border-color: var(--bb-border-strong);
+  --color: var(--bb-espresso);
+  white-space: nowrap;
+}
+
+.financial-note {
+  max-width: 860px;
+  margin: 0 0 var(--bb-space-3);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--bb-text-muted);
+}
+
+.financial-note--warning {
+  padding: var(--bb-space-3) var(--bb-space-4);
+  background: var(--bb-warning-soft-bg);
+  border: 1px solid var(--bb-warning-border);
+  border-radius: var(--bb-radius-md);
   color: var(--bb-warning-soft-text);
+  font-weight: 500;
+}
+
+/* The revenue summary always reads as two balanced cards. */
+.financial-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: var(--bb-space-4);
+}
+
+.stat-revenue .stat-icon {
+  background: var(--bb-tan);
+}
+
+.stat-revenue .stat-icon ion-icon {
+  color: var(--bb-espresso);
+}
+
+.financial-breakdown {
+  padding: var(--bb-space-4);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-card);
+}
+
+.breakdown-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bb-space-2);
+  margin-bottom: var(--bb-space-3);
+}
+
+.breakdown-head h3 {
+  margin: 0;
+  font-family: var(--bb-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bb-espresso);
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 330px;
+  padding-right: var(--bb-space-1);
+  overflow-y: auto;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 72px minmax(80px, 1fr) 104px 64px;
+  align-items: center;
+  gap: var(--bb-space-3);
+  font-size: 13px;
+}
+
+.breakdown-label {
+  color: var(--bb-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.breakdown-track {
+  min-width: 60px;
+  height: 8px;
+  overflow: hidden;
+  background: var(--bb-surface-sunken);
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-pill);
+}
+
+.breakdown-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bb-coffee), var(--bb-espresso));
+  border-radius: inherit;
+  transition: width var(--bb-motion-base) var(--bb-ease);
+}
+
+.breakdown-value {
+  color: var(--bb-espresso);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.breakdown-count {
+  color: var(--bb-text-muted);
+  font-size: var(--bb-text-sm);
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* ── Quick action tiles ── */
+
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--bb-space-4);
-  margin-bottom: var(--bb-space-5);
 }
 
 .quick-tile {
@@ -235,7 +446,7 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 50%;
+  border-radius: var(--bb-radius-md);
   background: var(--bb-tan);
   transition: background-color var(--bb-motion-fast) var(--bb-ease);
 }
@@ -247,7 +458,7 @@
 }
 
 .quick-tile .quick-label {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--bb-font-display);
   font-size: 17px;
   font-weight: 600;
   color: var(--bb-espresso);
@@ -280,14 +491,57 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 700px) {
-  .stat-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+/* ── Responsive collapse ── */
+
+@media (max-width: 860px) {
+  .stat-grid--orders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .stat-grid,
+  .financial-stats {
+    grid-template-columns: 1fr;
     gap: var(--bb-space-3);
   }
 
-  .stat-card ion-card-title {
-    font-size: 30px;
+  .stat-card {
+    padding: var(--bb-space-4);
+  }
+
+  .stat-value {
+    font-size: var(--bb-text-xl);
+  }
+
+  .financial-toolbar {
+    padding: var(--bb-space-3);
+  }
+
+  .period-nav {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .period-current {
+    width: 100%;
+  }
+
+  .breakdown-row {
+    grid-template-columns: 52px minmax(36px, 1fr) 88px;
+  }
+
+  .breakdown-count {
+    display: none;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
   }
 
   .quick-tile {

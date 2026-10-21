@@ -52,6 +52,42 @@ export function paymentStatusOf(order: Order): string {
 }
 
 /**
+ * Persisted payment statuses that mean money was actually collected. Historic
+ * gateway values are included so old PAID orders keep their payment history.
+ */
+const COLLECTED_PAYMENT_STATUSES: ReadonlySet<string> = new Set([
+  'PAID',
+  'SUCCEEDED',
+  'CAPTURED',
+  'COMPLETED',
+  'REFUNDED',
+]);
+
+/** Whether a persisted payment status means money was collected. */
+export function isCollectedPaymentStatus(status: unknown): boolean {
+  return COLLECTED_PAYMENT_STATUSES.has(
+    String(status ?? '').toUpperCase()
+  );
+}
+
+/**
+ * Whether this order has a persisted record of collected money. Only the
+ * stored payment status and append-only payment audit history are consulted --
+ * never the cancellation or fulfilment status. This keeps legacy COD
+ * cancellations with misleading refund fields from looking refundable.
+ */
+export function hasCollectedPayment(order: Order): boolean {
+  if (isCollectedPaymentStatus(order.paymentStatus)) {
+    return true;
+  }
+  return Array.isArray(order.paymentAudit)
+    ? order.paymentAudit.some((entry) =>
+        isCollectedPaymentStatus(entry?.to)
+      )
+    : false;
+}
+
+/**
  * Whether the admin may record `decision` for this order right now. Per the
  * backend contract only a `VERIFYING` GCash order with submitted details
  * accepts a decision; approval (`PAID`) additionally requires the uploaded

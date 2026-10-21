@@ -4,6 +4,44 @@
   gap: var(--bb-space-4);
 }
 
+/*
+ * Primary page action.
+ *
+ * The shared solid-button treatment reads Ionic's `primary` colour tokens,
+ * which ship a stock blue. Re-mapping those tokens to the espresso palette on
+ * the control itself keeps the global button CSS untouched while the main
+ * action renders in BistroBuddies coffee brown with white text. Hover, focus
+ * and pressed feedback come from the same shared treatment (a light overlay
+ * on hover/focus, the darker espresso shade on press).
+ */
+.add-product-btn {
+  --ion-color-primary: var(--bb-espresso);
+  --ion-color-primary-shade: var(--bb-espresso-deep);
+  --ion-color-primary-tint: var(--bb-espresso-deep);
+
+  --border-radius: var(--bb-radius-md);
+  --padding-start: 18px;
+  --padding-end: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 10px rgba(59, 35, 20, 0.18);
+  transition:
+    transform var(--bb-motion-fast) var(--bb-ease),
+    box-shadow var(--bb-motion-fast) var(--bb-ease);
+}
+
+.add-product-btn:hover {
+  box-shadow: 0 4px 14px rgba(59, 35, 20, 0.24);
+}
+
+.add-product-btn:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.add-product-btn[disabled] {
+  box-shadow: none;
+}
+
 .results-count {
   margin: 0 0 var(--bb-space-3);
   font-size: 13px;
@@ -142,7 +180,12 @@
   --color: var(--bb-danger-soft-text);
 }
 
-@media (max-width: 720px) {
+/*
+ * Below ~960px (or on narrower laptops beside the sidebar) the card runs
+ * out of horizontal room, so the availability toggle and action buttons
+ * move to their own full-width row under the product details.
+ */
+@media (max-width: 960px) {
   .product-body {
     padding: var(--bb-space-3);
     gap: var(--bb-space-3);
@@ -160,6 +203,8 @@
     justify-content: flex-start;
     margin-left: 0;
     width: 100%;
+    padding-top: var(--bb-space-3);
+    border-top: 1px dashed var(--bb-border-strong);
   }
 
   .action-buttons {

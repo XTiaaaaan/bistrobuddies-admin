@@ -1,4 +1,5 @@
 import { Order } from '@shared/models/order.model';
+import { hasCollectedPayment } from './payment-decision';
 import {
   canCompleteRefund,
   canStartRefund,
@@ -127,6 +128,162 @@ describe('refund eligibility', () => {
     expect(refundActionHint(paidCancelled({ paymentStatus: 'REJECTED' }))).toMatch(
       /not confirmed/i
     );
+  });
+});
+
+describe('cancelled COD refund rules', () => {
+  /** A cancelled COD order whose cash was never collected. */
+  function cancelledUnpaidCod(overrides: Partial<Order> = {}): Order {
+    return paidCancelled({
+      paymentMethod: 'COD',
+      paymentStatus: 'PENDING',
+      gcashDetails: null,
+      ...overrides,
+    });
+  }
+
+  it('does not display or offer a refund for a cancelled unpaid COD order', () => {
+    const order = cancelledUnpaidCod();
+
+    expect(isCancelledPaidOrder(order)).toBe(false);
+    expect(showRefundStatus(order)).toBe(false);
+    expect(canStartRefund(order)).toBe(false);
+    expect(canCompleteRefund(order)).toBe(false);
+    expect(refundActionHint(order)).toMatch(/not confirmed/i);
+  });
+
+  it('hides legacy misleading refund fields without rewriting them', () => {
+    const legacy = cancelledUnpaidCod({
+      refund: {
+        status: 'REFUND_PENDING',
+        amount: 215,
+        requestedAt: '2026-10-20T08:00:00.000Z',
+      },
+    });
+
+    expect(refundStatusOf(legacy)).toBe('REFUND_PENDING');
+    expect(showRefundStatus(legacy)).toBe(false);
+    expect(canStartRefund(legacy)).toBe(false);
+    expect(canCompleteRefund(legacy)).toBe(false);
+    // The historical values are still readable for inspection.
+    expect(legacy.refund?.amount).toBe(215);
+    expect(legacy.refund?.requestedAt).toBe('2026-10-20T08:00:00.000Z');
+  });
+
+  it('keeps refund handling for a cancelled COD order with collected cash', () => {
+    const paid = cancelledUnpaidCod({ paymentStatus: 'PAID' });
+
+    expect(isCancelledPaidOrder(paid)).toBe(true);
+    expect(showRefundStatus(paid)).toBe(true);
+    expect(canStartRefund(paid)).toBe(true);
+    expect(refundAmount(paid)).toBe(215);
+
+    const pending = cancelledUnpaidCod({
+      paymentStatus: 'PAID',
+      refund: { status: 'REFUND_PENDING', amount: 215 },
+    });
+    expect(showRefundStatus(pending)).toBe(true);
+    expect(canCompleteRefund(pending)).toBe(true);
+  });
+
+  it('recognizes collected cash from the persisted payment audit history', () => {
+    const legacyPaid = cancelledUnpaidCod({
+      paymentStatus: 'CANCELLED',
+      paymentAudit: [
+        {
+          from: 'PENDING',
+          to: 'PAID',
+          actorUid: 'admin-1',
+          actorRole: 'admin',
+        },
+      ],
+    });
+
+    expect(isCancelledPaidOrder(legacyPaid)).toBe(true);
+    expect(showRefundStatus(legacyPaid)).toBe(true);
+    expect(canStartRefund(legacyPaid)).toBe(true);
+  });
+
+  it('does not infer payment from the cancelled order status alone', () => {
+    const order = cancelledUnpaidCod({
+      paymentStatus: 'CANCELLED',
+      paymentAudit: [
+        {
+          from: 'PENDING',
+          to: 'CANCELLED',
+          actorUid: 'admin-1',
+          actorRole: 'admin',
+        },
+      ],
+    });
+
+    expect(hasCollectedPayment(order)).toBe(false);
+    expect(isCancelledPaidOrder(order)).toBe(false);
+    expect(showRefundStatus(order)).toBe(false);
+  });
+});
+
+describe('cancelled GCash refund rules', () => {
+  it('keeps the existing paid GCash refund workflow', () => {
+    const paid = paidCancelled({ paymentMethod: 'GCASH' });
+    expect(showRefundStatus(paid)).toBe(true);
+    expect(canStartRefund(paid)).toBe(true);
+  });
+
+  it('does not display a refund for a cancelled unpaid GCash order', () => {
+    const unpaid = paidCancelled({
+      paymentMethod: 'GCASH',
+      paymentStatus: 'VERIFYING',
+      refund: { status: 'REFUND_PENDING' },
+    });
+
+    expect(showRefundStatus(unpaid)).toBe(false);
+    expect(canStartRefund(unpaid)).toBe(false);
+    expect(canCompleteRefund(unpaid)).toBe(false);
+  });
+});
+
+describe('refund history preservation', () => {
+  it('preserves recorded refund facts for a genuinely paid order', () => {
+    const refund = {
+      status: 'REFUNDED',
+      amount: 215,
+      requestedAt: '2026-10-20T08:00:00.000Z',
+      completedAt: '2026-10-21T08:00:00.000Z',
+      requestedBy: 'admin-1',
+      completedBy: 'admin-1',
+    };
+    const order = paidCancelled({
+      refund,
+      refundAudit: [
+        {
+          from: 'NOT_REFUNDED',
+          to: 'REFUND_PENDING',
+          actorUid: 'admin-1',
+          actorRole: 'admin',
+        },
+        {
+          from: 'REFUND_PENDING',
+          to: 'REFUNDED',
+          actorUid: 'admin-1',
+          actorRole: 'admin',
+        },
+      ],
+    });
+
+    expect(showRefundStatus(order)).toBe(true);
+    expect(refundStatusOf(order)).toBe('REFUNDED');
+    expect(refundAmount(order)).toBe(215);
+    expect(order.refund).toEqual(refund);
+    expect(order.refundAudit).toHaveLength(2);
+
+    const legacyStatus = paidCancelled({
+      paymentStatus: 'REFUNDED',
+      refund,
+    });
+    expect(showRefundStatus(legacyStatus)).toBe(true);
+    expect(refundStatusOf(legacyStatus)).toBe('REFUNDED');
+    expect(refundAmount(legacyStatus)).toBe(215);
   });
 });
 

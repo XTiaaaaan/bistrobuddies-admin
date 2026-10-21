@@ -30,15 +30,17 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
 
 describe('AdminNotificationsService', () => {
   let orders$: Subject<Order[]>;
+  let watchOrders: ReturnType<typeof vi.fn>;
   let service: AdminNotificationsService;
 
   beforeEach(() => {
     orders$ = new Subject<Order[]>();
+    watchOrders = vi.fn(() => orders$.asObservable());
     TestBed.configureTestingModule({
       providers: [
         {
           provide: OrdersService,
-          useValue: { watchOrders: () => orders$.asObservable() },
+          useValue: { watchOrders },
         },
       ],
     });
@@ -101,6 +103,35 @@ describe('AdminNotificationsService', () => {
     expect(service.unreadCount()).toBe(0);
   });
 
+  it('tracks loading, ready and error states for the bell', () => {
+    expect(service.status()).toBe('idle');
+
+    service.start();
+    expect(service.status()).toBe('loading');
+
+    orders$.next([]);
+    expect(service.status()).toBe('ready');
+
+    orders$.error(new Error('offline'));
+    expect(service.status()).toBe('error');
+    expect(service.notifications()).toEqual([]);
+  });
+
+  it('retries a failed listener and can become ready again', () => {
+    service.start();
+    orders$.error(new Error('offline'));
+    expect(service.status()).toBe('error');
+
+    const retry$ = new Subject<Order[]>();
+    watchOrders.mockReturnValueOnce(retry$.asObservable());
+
+    service.retry();
+    expect(service.status()).toBe('loading');
+
+    retry$.next([]);
+    expect(service.status()).toBe('ready');
+  });
+
   it('toggles and closes the panel', () => {
     expect(service.panelOpen()).toBe(false);
     service.togglePanel();
@@ -118,6 +149,7 @@ describe('AdminNotificationsService', () => {
     service.stop();
     expect(service.notifications()).toEqual([]);
     expect(service.panelOpen()).toBe(false);
+    expect(service.status()).toBe('idle');
 
     const seenAfterRestart: string[] = [];
     service.start();

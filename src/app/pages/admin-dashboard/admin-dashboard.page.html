@@ -45,25 +45,25 @@
             and administrator access.
           </p>
         } @else {
-          <div class="stat-grid bb-stagger">
+          <div class="stat-grid stat-grid--orders bb-stagger">
             <ion-card class="stat-card">
               <div class="stat-icon">
                 <ion-icon name="receipt" aria-hidden="true"></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ orderTotal() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>Total Orders</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ orderTotal() }}</span>
+                <span class="stat-label">Total Orders</span>
+              </div>
             </ion-card>
 
             <ion-card class="stat-card stat-pending">
               <div class="stat-icon">
                 <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ pendingCount() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>Pending</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ pendingCount() }}</span>
+                <span class="stat-label">Pending</span>
+              </div>
             </ion-card>
 
             <ion-card class="stat-card stat-progress">
@@ -73,10 +73,10 @@
                   aria-hidden="true"
                 ></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ inProgressCount() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>In Progress</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ inProgressCount() }}</span>
+                <span class="stat-label">In Progress</span>
+              </div>
             </ion-card>
 
             <ion-card class="stat-card stat-available">
@@ -86,20 +86,20 @@
                   aria-hidden="true"
                 ></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ completedCount() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>Completed</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ completedCount() }}</span>
+                <span class="stat-label">Delivered</span>
+              </div>
             </ion-card>
 
             <ion-card class="stat-card stat-unavailable">
               <div class="stat-icon">
                 <ion-icon name="close-circle" aria-hidden="true"></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ cancelledCount() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>Cancelled</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ cancelledCount() }}</span>
+                <span class="stat-label">Cancelled</span>
+              </div>
             </ion-card>
 
             <ion-card
@@ -109,10 +109,10 @@
               <div class="stat-icon">
                 <ion-icon name="wallet-outline" aria-hidden="true"></ion-icon>
               </div>
-              <ion-card-header>
-                <ion-card-title>{{ gcashToVerifyCount() }}</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>GCash To Verify</ion-card-content>
+              <div class="stat-copy">
+                <span class="stat-value">{{ gcashToVerifyCount() }}</span>
+                <span class="stat-label">GCash To Verify</span>
+              </div>
             </ion-card>
           </div>
 
@@ -157,41 +157,226 @@
         }
       </section>
 
+      @if (ordersStatus() === 'ready') {
+        <section
+          class="stat-section financial-section"
+          aria-labelledby="financials-heading"
+        >
+          <div class="section-head">
+            <h2 id="financials-heading">Financials</h2>
+            <span class="section-meta">Collected revenue only</span>
+          </div>
+
+          <div class="financial-toolbar">
+            <div class="period-tabs" role="group" aria-label="Financial period">
+              <button
+                type="button"
+                class="period-tab"
+                [class.period-tab--active]="financialPeriod() === 'day'"
+                [attr.aria-pressed]="financialPeriod() === 'day'"
+                (click)="setFinancialPeriod('day')"
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                class="period-tab"
+                [class.period-tab--active]="financialPeriod() === 'month'"
+                [attr.aria-pressed]="financialPeriod() === 'month'"
+                (click)="setFinancialPeriod('month')"
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                class="period-tab"
+                [class.period-tab--active]="financialPeriod() === 'year'"
+                [attr.aria-pressed]="financialPeriod() === 'year'"
+                (click)="setFinancialPeriod('year')"
+              >
+                Annual
+              </button>
+            </div>
+
+            <div class="period-nav">
+              <ion-button
+                fill="clear"
+                size="small"
+                class="period-arrow"
+                aria-label="Previous financial period"
+                (click)="shiftFinancialPeriod(-1)"
+              >
+                <ion-icon
+                  slot="icon-only"
+                  name="chevron-back-outline"
+                ></ion-icon>
+              </ion-button>
+              <div class="period-copy">
+                <span class="period-title">{{ financialTitle() }}</span>
+                <span class="period-range">{{ financialRangeLabel() }}</span>
+              </div>
+              <ion-button
+                fill="clear"
+                size="small"
+                class="period-arrow"
+                aria-label="Next financial period"
+                (click)="shiftFinancialPeriod(1)"
+              >
+                <ion-icon
+                  slot="icon-only"
+                  name="chevron-forward-outline"
+                ></ion-icon>
+              </ion-button>
+            </div>
+
+            <ion-button
+              fill="outline"
+              size="small"
+              class="period-current"
+              (click)="resetFinancialPeriod()"
+            >
+              <ion-icon slot="start" name="calendar-outline"></ion-icon>
+              Current
+              {{
+                financialPeriod() === 'day'
+                  ? 'day'
+                  : financialPeriod() === 'month'
+                    ? 'month'
+                    : 'year'
+              }}
+            </ion-button>
+          </div>
+
+          <p class="financial-note">
+            Collected revenue uses each order's saved total (including delivery
+            fee) for paid GCash orders and delivered COD orders. Cancelled,
+            unpaid and unverified orders are excluded. GCash revenue is dated by
+            the admin payment decision; COD revenue by its delivery settlement
+            (older completed COD orders fall back to the last order update).
+          </p>
+
+          <div class="stat-grid financial-stats bb-stagger">
+            <ion-card class="stat-card stat-revenue">
+              <div class="stat-icon">
+                <ion-icon name="cash-outline" aria-hidden="true"></ion-icon>
+              </div>
+              <div class="stat-copy">
+                <span class="stat-value">{{
+                  formatMoney(financialSummary().revenue)
+                }}</span>
+                <span class="stat-label">Collected Revenue</span>
+              </div>
+            </ion-card>
+
+            <ion-card class="stat-card stat-available">
+              <div class="stat-icon">
+                <ion-icon
+                  name="checkmark-done-outline"
+                  aria-hidden="true"
+                ></ion-icon>
+              </div>
+              <div class="stat-copy">
+                <span class="stat-value">{{
+                  financialSummary().paidOrderCount
+                }}</span>
+                <span class="stat-label">Paid Orders</span>
+              </div>
+            </ion-card>
+          </div>
+
+          @if (financialSummary().undatedOrderCount > 0) {
+            <p
+              class="financial-note financial-note--warning"
+              role="status"
+            >
+              {{ financialSummary().undatedOrderCount }}
+              {{
+                financialSummary().undatedOrderCount === 1
+                  ? 'paid order has'
+                  : 'paid orders have'
+              }}
+              no recorded payment date
+              ({{ formatMoney(financialSummary().undatedRevenue) }}) and
+              cannot be placed in a period. They are not included in the
+              totals above.
+            </p>
+          }
+
+          @if (financialPeriod() !== 'day') {
+            <div class="financial-breakdown">
+              <div class="breakdown-head">
+                <h3>
+                  {{
+                    financialPeriod() === 'year'
+                      ? 'Monthly breakdown'
+                      : 'Daily breakdown'
+                  }}
+                </h3>
+                <span class="section-meta">
+                  Same paid orders as the totals above
+                </span>
+              </div>
+
+              <div class="breakdown-list" role="list">
+                @for (bucket of financialBreakdown(); track bucket.key) {
+                  <div class="breakdown-row" role="listitem">
+                    <span class="breakdown-label">{{ bucket.label }}</span>
+                    <span class="breakdown-track" aria-hidden="true">
+                      <span
+                        class="breakdown-fill"
+                        [style.width.%]="breakdownShare(bucket)"
+                      ></span>
+                    </span>
+                    <span class="breakdown-value">{{
+                      formatMoney(bucket.revenue)
+                    }}</span>
+                    <span class="breakdown-count">
+                      {{ bucket.paidOrderCount }}
+                      {{ bucket.paidOrderCount === 1 ? 'order' : 'orders' }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      }
+
       <section class="stat-section" aria-labelledby="menu-stats-heading">
         <div class="section-head">
           <h2 id="menu-stats-heading">Menu</h2>
           <span class="section-meta">From your product catalogue</span>
         </div>
 
-        <div class="stat-grid bb-stagger">
+        <div class="stat-grid stat-grid--menu bb-stagger">
           <ion-card class="stat-card">
             <div class="stat-icon">
               <ion-icon name="cafe" aria-hidden="true"></ion-icon>
             </div>
-            <ion-card-header>
-              <ion-card-title>{{ total() }}</ion-card-title>
-            </ion-card-header>
-            <ion-card-content>Total Products</ion-card-content>
+            <div class="stat-copy">
+              <span class="stat-value">{{ total() }}</span>
+              <span class="stat-label">Total Products</span>
+            </div>
           </ion-card>
 
           <ion-card class="stat-card stat-available">
             <div class="stat-icon">
               <ion-icon name="checkmark-circle" aria-hidden="true"></ion-icon>
             </div>
-            <ion-card-header>
-              <ion-card-title>{{ available() }}</ion-card-title>
-            </ion-card-header>
-            <ion-card-content>Available</ion-card-content>
+            <div class="stat-copy">
+              <span class="stat-value">{{ available() }}</span>
+              <span class="stat-label">Available</span>
+            </div>
           </ion-card>
 
           <ion-card class="stat-card stat-unavailable">
             <div class="stat-icon">
               <ion-icon name="close-circle" aria-hidden="true"></ion-icon>
             </div>
-            <ion-card-header>
-              <ion-card-title>{{ unavailable() }}</ion-card-title>
-            </ion-card-header>
-            <ion-card-content>Unavailable</ion-card-content>
+            <div class="stat-copy">
+              <span class="stat-value">{{ unavailable() }}</span>
+              <span class="stat-label">Unavailable</span>
+            </div>
           </ion-card>
         </div>
       </section>

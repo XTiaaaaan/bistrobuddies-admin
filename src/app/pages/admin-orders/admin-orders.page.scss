@@ -17,8 +17,8 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 14px;
-  min-height: 36px;
+  padding: 8px 15px;
+  min-height: 38px;
   border: 1px solid var(--bb-border-strong);
   border-radius: var(--bb-radius-pill);
   background: var(--bb-surface);
@@ -49,21 +49,6 @@
   border-color: var(--bb-coffee);
 }
 
-.summary-chip--active {
-  background: var(--bb-espresso);
-  border-color: var(--bb-espresso);
-  color: #f0e4d6;
-}
-
-.summary-chip--active strong,
-.summary-chip--active:hover {
-  color: #ffffff;
-}
-
-.summary-chip--active strong {
-  background: rgba(255, 255, 255, 0.16);
-}
-
 .summary-chip--attention {
   border-color: rgba(166, 123, 91, 0.4);
 }
@@ -83,19 +68,83 @@
   background: rgba(212, 169, 106, 0.32);
 }
 
+/*
+ * The selected chip must always win. It is declared after the alert and
+ * attention modifiers — and it covers hover — so an engaged "Proofs to
+ * review" chip never keeps the alert's pale fill under the active chip's
+ * light text.
+ */
+.summary-chip--active,
+.summary-chip--active:hover {
+  background: var(--bb-espresso);
+  border-color: var(--bb-espresso);
+  color: #f0e4d6;
+}
+
+.summary-chip--active strong,
+.summary-chip--active:hover strong {
+  color: #ffffff;
+}
+
+.summary-chip--active strong {
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .summary-chip:focus-visible {
   outline: 2px solid var(--bb-coffee);
   outline-offset: 2px;
 }
 
+/* ── Active filter affordance ── *
+ *
+ * A narrowed filter must be obvious at a glance, so an engaged control swaps
+ * its neutral border for the coffee accent and picks up the shared focus ring.
+ */
+
+.filter-search--active {
+  --border-color: var(--bb-coffee);
+}
+
+.filter-select--active::part(container) {
+  border-color: var(--bb-coffee);
+  background: var(--bb-surface-sunken);
+  box-shadow: var(--bb-focus-ring);
+}
+
 /* ── Order cards ── */
 
 .order-card {
+  --bb-order-accent: var(--bb-border-strong);
   margin: 0;
   border: 1px solid var(--bb-border);
+  /* A slim status rail along the left edge reads as the card's "spine". */
+  border-left-width: 4px;
+  border-left-color: var(--bb-order-accent);
   transition:
     box-shadow var(--bb-motion-fast) var(--bb-ease),
     border-color var(--bb-motion-fast) var(--bb-ease);
+}
+
+/* One accent per fulfilment status, drawn from the shared palette. */
+[data-order-status='PENDING'] {
+  --bb-order-accent: var(--bb-warning);
+}
+
+[data-order-status='CONFIRMED'],
+[data-order-status='PREPARING'] {
+  --bb-order-accent: var(--bb-espresso);
+}
+
+[data-order-status='READY'] {
+  --bb-order-accent: var(--bb-coffee);
+}
+
+[data-order-status='OUT_FOR_DELIVERY'] {
+  --bb-order-accent: var(--bb-info);
+}
+
+[data-order-status='COMPLETED'] {
+  --bb-order-accent: var(--bb-success);
 }
 
 /* Cancelled orders read as inactive history, not an error. */
@@ -105,6 +154,10 @@
 
 .order-card--cancelled .order-head .order-id strong {
   color: var(--bb-text-muted);
+}
+
+.order-card--cancelled .order-badges {
+  opacity: 0.85;
 }
 
 .order-card:hover {
@@ -123,20 +176,30 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px var(--bb-space-4);
+  gap: var(--bb-space-3) var(--bb-space-4);
   padding: var(--bb-space-4);
   background: var(--bb-surface-sunken);
   border-bottom: 1px solid var(--bb-border);
   border-radius: var(--bb-radius-card) var(--bb-radius-card) 0 0;
 }
 
-.order-id {
+.order-head-lead,
+.order-head-total {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-.order-id-label {
+.order-id {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.order-id-label,
+.order-total-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -146,18 +209,36 @@
 .order-id strong {
   font-size: 15px;
   color: var(--bb-espresso);
+  font-family: var(--bb-font-mono);
   word-break: break-all;
+}
+
+.order-date {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bb-text-muted);
 }
 
 .order-badges {
   display: flex;
+  flex: 1 1 240px;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
-.order-date {
-  font-size: 13px;
-  color: var(--bb-text-muted);
+.order-head-total {
+  margin-left: auto;
+  text-align: right;
+}
+
+.order-head-total strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--bb-espresso);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .order-grid {
@@ -169,6 +250,7 @@
 .order-block {
   padding: var(--bb-space-4);
   border-top: 1px solid var(--bb-border);
+  min-width: 0;
 }
 
 .order-block h3 {
@@ -187,9 +269,106 @@
   word-break: break-word;
 }
 
+.order-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bb-space-2);
+  margin-bottom: var(--bb-space-2);
+}
+
+.order-block-head h3 {
+  margin: 0;
+}
+
+.order-block-meta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bb-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Customer and contact lines: the name leads, the rest supports it. */
+.order-customer-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bb-espresso);
+}
+
+.order-detail-line {
+  color: var(--bb-text-muted);
+}
+
+.order-comment {
+  padding: var(--bb-space-2) var(--bb-space-3);
+  border-left: 3px solid var(--bb-tan);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-surface-sunken);
+  font-style: italic;
+  color: var(--bb-text);
+}
+
 .muted {
   color: var(--bb-text-soft) !important;
   font-size: 13px !important;
+}
+
+/* ── Fulfilment progress rail ── *
+ *
+ * Six compact steps show where the order sits in the pipeline without
+ * implying transitions the backend would refuse.
+ */
+
+.status-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--bb-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-rail-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-pill);
+  background: var(--bb-surface-sunken);
+  color: var(--bb-text-soft);
+  font-size: var(--bb-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-rail-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--bb-border-strong);
+}
+
+.status-rail-step--done {
+  border-color: var(--bb-border-strong);
+  background: var(--bb-surface);
+  color: var(--bb-text-muted);
+}
+
+.status-rail-step--done .status-rail-dot {
+  background: var(--bb-coffee);
+}
+
+.status-rail-step--current {
+  border-color: var(--bb-espresso);
+  background: var(--bb-espresso);
+  color: #ffffff;
+  box-shadow: var(--bb-shadow-card);
+}
+
+.status-rail-step--current .status-rail-dot {
+  background: var(--bb-tan);
 }
 
 .table-scroll {
@@ -219,6 +398,10 @@
   letter-spacing: 0.8px;
   color: var(--bb-text-muted);
   background: var(--bb-surface-sunken);
+}
+
+.order-items tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .order-items td:first-child {
@@ -254,8 +437,21 @@
   align-items: baseline;
   gap: var(--bb-space-2) var(--bb-space-4);
   margin-top: var(--bb-space-3);
+  padding-top: var(--bb-space-3);
+  border-top: 1px dashed var(--bb-border-strong);
   font-size: 14px;
   color: var(--bb-text);
+}
+
+.totals-line {
+  font-size: 13px;
+  color: var(--bb-text-muted);
+}
+
+.totals-line b {
+  font-weight: 600;
+  color: var(--bb-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .totals-total {
@@ -265,6 +461,57 @@
   font-weight: 700;
   color: var(--bb-espresso);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Order actions ── *
+ *
+ * Three visual roles: solid espresso advances the order, a quiet outlined
+ * red cancels it, and the warm coffee outline records a refund. Colour and
+ * fill do the talking; no button shouts louder than its neighbours.
+ *
+ * The buttons bind Ionic's `primary` / `success` / `danger` colours, which
+ * resolve to Ionic's stock palette unless the colour tokens are re-mapped on
+ * the control itself. Re-declaring the tokens with the shared `--bb-*` values
+ * keeps every action on the coffee palette without duplicating button CSS.
+ */
+
+.order-action,
+.payment-action,
+.refund-action {
+  --border-radius: var(--bb-radius-sm);
+  font-weight: 700;
+}
+
+/* Contrast stays white from Ionic's colour-class defaults. */
+.order-action--advance {
+  --ion-color-primary: var(--bb-espresso);
+  --ion-color-primary-shade: var(--bb-espresso-deep);
+  --ion-color-primary-tint: var(--bb-espresso-deep);
+}
+
+.order-action--cancel,
+.payment-action--reject {
+  --ion-color-danger: var(--bb-danger);
+  --ion-color-danger-shade: var(--bb-danger-soft-text);
+  --ion-color-danger-tint: var(--bb-danger);
+  --background-hover: var(--bb-danger-soft-bg);
+}
+
+.payment-action--confirm,
+.refund-action--complete {
+  --ion-color-success: var(--bb-success);
+  --ion-color-success-shade: var(--bb-success-soft-text);
+  --ion-color-success-tint: var(--bb-success);
+}
+
+/* Opening a refund starts a money-back flow: a warm coffee outline. */
+.refund-action--start {
+  --background: transparent;
+  --background-hover: var(--bb-surface-sunken);
+  --color: var(--bb-espresso);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--bb-coffee);
 }
 
 /* ── GCash verification panel ── */
@@ -452,23 +699,6 @@
   font-size: 13px;
 }
 
-.payment-audit {
-  margin-top: var(--bb-space-3);
-  font-size: 12px;
-  color: var(--bb-text-muted);
-}
-
-.payment-audit summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.payment-audit ul {
-  margin: var(--bb-space-2) 0 0;
-  padding-left: 18px;
-  line-height: 1.5;
-}
-
 @media (max-width: 560px) {
   .proof-layout {
     grid-template-columns: 1fr;
@@ -490,7 +720,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--bb-space-2);
-  margin-top: var(--bb-space-2);
+  margin-top: var(--bb-space-3);
 }
 
 /* Cancelled orders are terminal history, not an actionable alert. */
@@ -501,6 +731,11 @@
 @media (max-width: 700px) {
   .order-head {
     padding: var(--bb-space-3);
+    align-items: flex-start;
+  }
+
+  .order-head-total {
+    margin-left: 0;
   }
 
   .order-block {
@@ -509,5 +744,16 @@
 
   .totals {
     justify-content: flex-start;
+  }
+
+  .totals-total {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Actions keep a comfortable touch target and never clip sideways. */
+  .status-actions ion-button {
+    flex: 1 1 auto;
   }
 }

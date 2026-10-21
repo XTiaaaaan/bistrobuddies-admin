@@ -80,25 +80,27 @@ describe('fulfilment-aware order statuses', () => {
     );
   });
 
-  it('offers OUT_FOR_DELIVERY to delivery orders once READY', () => {
+  it('offers On the Way (not Delivered) once an order is READY', () => {
     const delivery = makeOrder({ orderStatus: 'READY' });
     expect(allowedNextOrderStatuses(delivery)).toEqual([
       'OUT_FOR_DELIVERY',
-      'COMPLETED',
       'CANCELLED',
     ]);
+    expect(allowedNextOrderStatuses(delivery)).not.toContain('COMPLETED');
     expect(canDispatchOrder(delivery)).toBe(true);
     expect(canTransitionOrder(delivery, 'OUT_FOR_DELIVERY')).toBe(true);
-    expect(canTransitionOrder(delivery, 'COMPLETED')).toBe(true);
+    expect(canTransitionOrder(delivery, 'COMPLETED')).toBe(false);
   });
 
-  it('never forces pickup orders through OUT_FOR_DELIVERY', () => {
+  it('treats every order as a delivery order for the status workflow', () => {
     const pickup = makeOrder({ orderStatus: 'READY', fulfillmentType: 'PICKUP' });
-    expect(allowedNextOrderStatuses(pickup)).toEqual(['COMPLETED', 'CANCELLED']);
-    expect(allowedNextOrderStatuses(pickup)).not.toContain('OUT_FOR_DELIVERY');
-    expect(canDispatchOrder(pickup)).toBe(false);
-    expect(canTransitionOrder(pickup, 'OUT_FOR_DELIVERY')).toBe(false);
-    expect(canTransitionOrder(pickup, 'COMPLETED')).toBe(true);
+    expect(allowedNextOrderStatuses(pickup)).toEqual([
+      'OUT_FOR_DELIVERY',
+      'CANCELLED',
+    ]);
+    expect(canDispatchOrder(pickup)).toBe(true);
+    expect(canTransitionOrder(pickup, 'OUT_FOR_DELIVERY')).toBe(true);
+    expect(canTransitionOrder(pickup, 'COMPLETED')).toBe(false);
   });
 
   it('allows a dispatched delivery order to complete', () => {

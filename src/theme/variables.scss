@@ -1,9 +1,10 @@
-// BistroBuddies Coffee Palette
+// BistroBuddies Admin - shared design tokens
 //
-// Shared design tokens for the admin site: warm espresso/coffee/cream
-// palette, spacing, radii, shadows and motion. Component styles reference
-// these `--bb-*` variables instead of raw hex values.
+// One warm coffee-shop system for every admin screen. Component styles use
+// these `--bb-*` variables instead of raw hex values so the login page,
+// dashboard, tables, forms, dialogs and notification panel stay in sync.
 :root {
+  /* -- Ionic colour bridge ----------------------------------------------- */
   --ion-color-primary: #3b2314;
   --ion-color-primary-rgb: 59, 35, 20;
   --ion-color-primary-contrast: #ffffff;
@@ -39,19 +40,19 @@
   --ion-toolbar-background: #3b2314;
   --ion-toolbar-color: #ffffff;
 
-  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-
-  /* ── Core palette ── */
+  /* -- Core palette -- */
   --bb-espresso: #3b2314;
+  --bb-espresso-deep: #2a180d;
   --bb-coffee: #a67b5b;
   --bb-caramel: var(--bb-coffee);
   --bb-tan: #e6d5c0;
   --bb-caramel-light: var(--bb-tan);
   --bb-cream: #f5ebe0;
+  --bb-cream-deep: #efe2d3;
 
   --bb-surface: #ffffff;
   --bb-surface-sunken: #faf5ef;
+  --bb-surface-muted: #f7f1e9;
   --bb-border: #eadfd2;
   --bb-border-strong: #dccbb4;
 
@@ -59,23 +60,45 @@
   --bb-text-muted: #8a6f5a;
   --bb-text-soft: #a89280;
 
-  /* ── Semantic accents (badges, banners, icons) ── */
+  /* -- Semantic accents (badges, banners, icons) -- */
   --bb-success: #4a7c59;
-  --bb-success-soft-bg: rgba(74, 124, 89, 0.14);
+  --bb-success-soft-bg: rgba(74, 124, 89, 0.13);
   --bb-success-soft-text: #2f5c3e;
-  --bb-warning: #d4a96a;
-  --bb-warning-soft-bg: rgba(212, 169, 106, 0.22);
+  --bb-success-border: rgba(74, 124, 89, 0.28);
+  --bb-warning: #c99a52;
+  --bb-warning-soft-bg: rgba(212, 169, 106, 0.2);
   --bb-warning-soft-text: #7a5a2e;
+  --bb-warning-border: rgba(166, 123, 91, 0.3);
   --bb-danger: #b33a3a;
-  --bb-danger-soft-bg: rgba(179, 58, 58, 0.12);
+  --bb-danger-soft-bg: rgba(179, 58, 58, 0.11);
   --bb-danger-soft-text: #8c2f2f;
+  --bb-danger-border: rgba(179, 58, 58, 0.24);
   --bb-info: #5b7fa6;
-  --bb-info-soft-bg: rgba(91, 127, 166, 0.16);
+  --bb-info-soft-bg: rgba(91, 127, 166, 0.14);
   --bb-info-soft-text: #33567e;
+  --bb-info-border: rgba(91, 127, 166, 0.26);
   --bb-neutral-soft-bg: #f0e6da;
   --bb-neutral-soft-text: #6f5a45;
 
-  /* ── Spacing scale (4 · 8 · 12 · 16 · 24 · 32) ── */
+  /* -- Typography -- */
+  --bb-font-display: Georgia, 'Times New Roman', serif;
+  --bb-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --bb-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --bb-text-xs: 11px;
+  --bb-text-sm: 12px;
+  --bb-text-base: 14px;
+  --bb-text-md: 15px;
+  --bb-text-lg: 18px;
+  --bb-text-xl: 22px;
+  --bb-text-2xl: 28px;
+
+  --bb-leading-tight: 1.2;
+  --bb-leading-normal: 1.5;
+  --bb-tracking-label: 0.9px;
+
+  /* -- Spacing scale (4 - 8 - 12 - 16 - 24 - 32) -- */
   --bb-space-1: 4px;
   --bb-space-2: 8px;
   --bb-space-3: 12px;
@@ -83,23 +106,38 @@
   --bb-space-5: 24px;
   --bb-space-6: 32px;
 
-  /* ── Radii (8 · 12 · 16) ── */
+  /* -- Radii (6 - 8 - 12 - 16) -- */
+  --bb-radius-xs: 6px;
   --bb-radius-sm: 8px;
   --bb-radius-md: 12px;
   --bb-radius-lg: 16px;
   --bb-radius-card: var(--bb-radius-lg);
   --bb-radius-pill: 999px;
 
-  /* ── Warm, subtle shadows ── */
-  --bb-shadow-card: 0 6px 18px rgba(59, 35, 20, 0.07);
-  --bb-shadow-raised: 0 12px 28px rgba(59, 35, 20, 0.14);
+  /* -- Shell layout -- */
+  --bb-header-height: 66px;
+  --bb-sidebar-width: 252px;
+  --bb-content-width: 1200px;
+  --bb-control-height: 42px;
+  --bb-control-height-sm: 34px;
 
-  /* ── Motion (150–200ms, eased) ── */
+  /* -- Warm, restrained shadows -- */
+  --bb-shadow-card: 0 1px 2px rgba(59, 35, 20, 0.04),
+    0 8px 22px rgba(59, 35, 20, 0.055);
+  --bb-shadow-raised: 0 2px 6px rgba(59, 35, 20, 0.06),
+    0 18px 38px rgba(59, 35, 20, 0.13);
+  --bb-shadow-nav: 0 1px 0 rgba(230, 213, 192, 0.14);
+
+  /* -- Focus -- */
+  --bb-focus-color: var(--bb-coffee);
+  --bb-focus-ring: 0 0 0 3px rgba(166, 123, 91, 0.24);
+
+  /* -- Motion (150-200ms, eased) -- */
   --bb-motion-fast: 160ms;
   --bb-motion-base: 200ms;
   --bb-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 
-  /* ── Admin site aliases (legacy names kept for existing styles) ── */
+  /* -- Admin site aliases (legacy names kept for existing styles) -- */
   --admin-bg: var(--bb-cream);
   --admin-surface: var(--bb-surface);
   --admin-border: var(--bb-border);
