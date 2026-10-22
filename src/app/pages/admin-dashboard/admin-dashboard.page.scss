@@ -305,7 +305,7 @@
 }
 
 .financial-note {
-  max-width: 860px;
+  max-width: 1400px;
   margin: 0 0 var(--bb-space-3);
   font-size: 13px;
   line-height: 1.55;
@@ -359,59 +359,56 @@
   color: var(--bb-espresso);
 }
 
-.breakdown-list {
+.chart-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
-  max-height: 330px;
-  padding-right: var(--bb-space-1);
-  overflow-y: auto;
-}
-
-.breakdown-row {
-  display: grid;
-  grid-template-columns: 72px minmax(80px, 1fr) 104px 64px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--bb-space-3);
-  font-size: 13px;
+  justify-content: flex-end;
+  gap: var(--bb-space-2);
+  margin-bottom: var(--bb-space-3);
 }
 
-.breakdown-label {
+.chart-toolbar-label {
+  font-size: var(--bb-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
   color: var(--bb-text-muted);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
-.breakdown-track {
-  min-width: 60px;
-  height: 8px;
-  overflow: hidden;
-  background: var(--bb-surface-sunken);
-  border: 1px solid var(--bb-border);
+.chart-type-control {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  background: var(--bb-tan);
   border-radius: var(--bb-radius-pill);
 }
 
-.breakdown-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--bb-coffee), var(--bb-espresso));
-  border-radius: inherit;
-  transition: width var(--bb-motion-base) var(--bb-ease);
-}
-
-.breakdown-value {
+.chart-type-tab {
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--bb-radius-pill);
+  background: transparent;
   color: var(--bb-espresso);
+  font: inherit;
+  font-size: 13px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--bb-motion-fast) var(--bb-ease),
+    color var(--bb-motion-fast) var(--bb-ease);
 }
 
-.breakdown-count {
-  color: var(--bb-text-muted);
-  font-size: var(--bb-text-sm);
-  text-align: right;
-  white-space: nowrap;
+.chart-type-tab--active {
+  background: var(--bb-espresso);
+  color: #ffffff;
+  box-shadow: var(--bb-shadow-card);
+}
+
+.chart-type-tab:focus-visible {
+  outline: 2px solid var(--bb-coffee);
+  outline-offset: 2px;
 }
 
 /* ── Quick action tiles ── */
@@ -532,12 +529,16 @@
     width: 100%;
   }
 
-  .breakdown-row {
-    grid-template-columns: 52px minmax(36px, 1fr) 88px;
+  .chart-toolbar {
+    justify-content: flex-start;
   }
 
-  .breakdown-count {
-    display: none;
+  .chart-type-control {
+    width: 100%;
+  }
+
+  .chart-type-tab {
+    flex: 1;
   }
 
   .quick-grid {

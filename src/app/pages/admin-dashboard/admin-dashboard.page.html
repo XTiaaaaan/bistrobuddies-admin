@@ -312,31 +312,63 @@
                       : 'Daily breakdown'
                   }}
                 </h3>
-                <span class="section-meta">
-                  Same paid orders as the totals above
-                </span>
               </div>
 
-              <div class="breakdown-list" role="list">
-                @for (bucket of financialBreakdown(); track bucket.key) {
-                  <div class="breakdown-row" role="listitem">
-                    <span class="breakdown-label">{{ bucket.label }}</span>
-                    <span class="breakdown-track" aria-hidden="true">
-                      <span
-                        class="breakdown-fill"
-                        [style.width.%]="breakdownShare(bucket)"
-                      ></span>
-                    </span>
-                    <span class="breakdown-value">{{
-                      formatMoney(bucket.revenue)
-                    }}</span>
-                    <span class="breakdown-count">
-                      {{ bucket.paidOrderCount }}
-                      {{ bucket.paidOrderCount === 1 ? 'order' : 'orders' }}
-                    </span>
-                  </div>
-                }
+              <div class="chart-toolbar">
+                <span class="chart-toolbar-label" id="chart-type-label">
+                  Chart type
+                </span>
+                <div
+                  class="chart-type-control"
+                  role="group"
+                  aria-labelledby="chart-type-label"
+                >
+                  <button
+                    type="button"
+                    class="chart-type-tab"
+                    [class.chart-type-tab--active]="
+                      financialChartType() === 'horizontal'
+                    "
+                    [attr.aria-pressed]="
+                      financialChartType() === 'horizontal'
+                    "
+                    aria-controls="financial-chart"
+                    (click)="setFinancialChartType('horizontal')"
+                  >
+                    Horizontal bars
+                  </button>
+                  <button
+                    type="button"
+                    class="chart-type-tab"
+                    [class.chart-type-tab--active]="
+                      financialChartType() === 'bar'
+                    "
+                    [attr.aria-pressed]="financialChartType() === 'bar'"
+                    aria-controls="financial-chart"
+                    (click)="setFinancialChartType('bar')"
+                  >
+                    Bar
+                  </button>
+                  <button
+                    type="button"
+                    class="chart-type-tab"
+                    [class.chart-type-tab--active]="
+                      financialChartType() === 'line'
+                    "
+                    [attr.aria-pressed]="financialChartType() === 'line'"
+                    aria-controls="financial-chart"
+                    (click)="setFinancialChartType('line')"
+                  >
+                    Line
+                  </button>
+                </div>
               </div>
+
+              <admin-financial-chart
+                id="financial-chart"
+                [type]="financialChartType()"
+                [buckets]="financialBreakdown()"
+              ></admin-financial-chart>
             </div>
           }
         </section>
