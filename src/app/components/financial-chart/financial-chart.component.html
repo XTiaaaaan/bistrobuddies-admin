@@ -1,0 +1,212 @@
+@switch (type()) {
+  @case ('horizontal') {
+    <div class="breakdown-list" role="list" aria-label="Revenue breakdown">
+      @for (bucket of buckets(); track bucket.key) {
+        <div class="breakdown-row" role="listitem">
+          <span class="breakdown-label">{{ bucket.label }}</span>
+          <span class="breakdown-track" aria-hidden="true">
+            <span
+              class="breakdown-fill"
+              [style.width.%]="breakdownShare(bucket)"
+            ></span>
+          </span>
+          <span class="breakdown-value">{{ formatMoney(bucket.revenue) }}</span>
+          <span class="breakdown-count">
+            {{ bucket.paidOrderCount }}
+            {{ bucket.paidOrderCount === 1 ? 'order' : 'orders' }}
+          </span>
+        </div>
+      }
+    </div>
+  }
+
+  @case ('bar') {
+    @if (!hasData()) {
+      <div class="chart-empty" role="status">
+        <p>No collected revenue for this period.</p>
+      </div>
+    } @else {
+      <figure class="chart-figure">
+        <svg
+          class="chart-svg"
+          [attr.viewBox]="chartViewBox"
+          role="img"
+          [attr.aria-label]="chartDescription()"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <title>{{ chartDescription() }}</title>
+
+          <g class="chart-grid" aria-hidden="true">
+            @for (tick of yTicks(); track tick.ratio) {
+              <line
+                class="chart-grid-line"
+                [attr.x1]="plotLeft"
+                [attr.x2]="plotLeft + plotWidth"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+              ></line>
+              <text
+                class="chart-axis-label chart-axis-label--y"
+                [attr.x]="plotLeft - 10"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+          </g>
+
+          <g class="chart-bars">
+            @for (bar of bars(); track bar.key) {
+              <g class="chart-bar-group">
+                <rect
+                  class="chart-bar"
+                  [attr.x]="bar.x"
+                  [attr.y]="bar.y"
+                  [attr.width]="bar.width"
+                  [attr.height]="bar.height"
+                  rx="4"
+                >
+                  <title>{{ bar.tooltip }}</title>
+                </rect>
+              </g>
+            }
+          </g>
+
+          <g class="chart-x-axis" aria-hidden="true">
+            @for (bar of bars(); track bar.key) {
+              @if (bar.showLabel) {
+                <text
+                  class="chart-axis-label chart-axis-label--x"
+                  [attr.x]="bar.x + bar.width / 2"
+                  [attr.y]="labelY"
+                  text-anchor="middle"
+                >
+                  {{ bar.label }}
+                </text>
+              }
+            }
+          </g>
+        </svg>
+
+        <table class="visually-hidden">
+          <caption>{{ chartDescription() }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Period</th>
+              <th scope="col">Collected revenue</th>
+              <th scope="col">Paid orders</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (bucket of buckets(); track bucket.key) {
+              <tr>
+                <th scope="row">{{ bucket.label }}</th>
+                <td>{{ formatMoney(bucket.revenue) }}</td>
+                <td>{{ bucket.paidOrderCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </figure>
+    }
+  }
+
+  @case ('line') {
+    @if (!hasData()) {
+      <div class="chart-empty" role="status">
+        <p>No collected revenue for this period.</p>
+      </div>
+    } @else {
+      <figure class="chart-figure">
+        <svg
+          class="chart-svg"
+          [attr.viewBox]="chartViewBox"
+          role="img"
+          [attr.aria-label]="chartDescription()"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <title>{{ chartDescription() }}</title>
+
+          <g class="chart-grid" aria-hidden="true">
+            @for (tick of yTicks(); track tick.ratio) {
+              <line
+                class="chart-grid-line"
+                [attr.x1]="plotLeft"
+                [attr.x2]="plotLeft + plotWidth"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+              ></line>
+              <text
+                class="chart-axis-label chart-axis-label--y"
+                [attr.x]="plotLeft - 10"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+          </g>
+
+          @if (areaPath()) {
+            <path class="chart-area" [attr.d]="areaPath()" aria-hidden="true"></path>
+          }
+
+          <polyline
+            class="chart-line"
+            [attr.points]="linePoints()"
+            aria-hidden="true"
+          ></polyline>
+
+          <g class="chart-points">
+            @for (point of points(); track point.key) {
+              <circle
+                class="chart-dot"
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="4"
+              >
+                <title>{{ point.tooltip }}</title>
+              </circle>
+            }
+          </g>
+
+          <g class="chart-x-axis" aria-hidden="true">
+            @for (point of points(); track point.key) {
+              @if (point.showLabel) {
+                <text
+                  class="chart-axis-label chart-axis-label--x"
+                  [attr.x]="point.x"
+                  [attr.y]="labelY"
+                  text-anchor="middle"
+                >
+                  {{ point.label }}
+                </text>
+              }
+            }
+          </g>
+        </svg>
+
+        <table class="visually-hidden">
+          <caption>{{ chartDescription() }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Period</th>
+              <th scope="col">Collected revenue</th>
+              <th scope="col">Paid orders</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (bucket of buckets(); track bucket.key) {
+              <tr>
+                <th scope="row">{{ bucket.label }}</th>
+                <td>{{ formatMoney(bucket.revenue) }}</td>
+                <td>{{ bucket.paidOrderCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </figure>
+    }
+  }
+}

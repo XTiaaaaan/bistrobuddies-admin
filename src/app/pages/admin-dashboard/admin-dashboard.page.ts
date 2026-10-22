@@ -36,7 +36,6 @@ import { refundStatusOf, showRefundStatus } from '@shared/core/orders/refund';
 import { formatPhp } from '@shared/core/format/format';
 import {
   FinancialPeriod,
-  RevenueBucket,
   addPeriods,
   financialPeriodRangeLabel,
   financialPeriodTitle,
@@ -45,6 +44,10 @@ import {
   startOfPeriod,
   summarizeCollectedRevenue,
 } from '@shared/core/finance/financial-analytics';
+import {
+  FinancialChartComponent,
+  FinancialChartType,
+} from '@shared/components/financial-chart/financial-chart.component';
 
 /** Order statuses that count as "being worked on" right now. */
 const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
@@ -61,6 +64,7 @@ const IN_PROGRESS_STATUSES = new Set(['CONFIRMED', 'PREPARING', 'READY']);
     IonContent,
     IonIcon,
     IonSpinner,
+    FinancialChartComponent,
   ],
 })
 export class AdminDashboardPage implements OnInit {
@@ -122,6 +126,7 @@ export class AdminDashboardPage implements OnInit {
 
   readonly financialPeriod = signal<FinancialPeriod>('month');
   readonly financialAnchor = signal(startOfPeriod('month', new Date()));
+  readonly financialChartType = signal<FinancialChartType>('horizontal');
   private readonly financialRange = computed(() =>
     periodRange(this.financialPeriod(), this.financialAnchor())
   );
@@ -144,13 +149,6 @@ export class AdminDashboardPage implements OnInit {
       this.financialAnchor()
     )
   );
-  private readonly financialBreakdownMax = computed(() =>
-    Math.max(
-      0,
-      ...this.financialBreakdown().map((bucket) => bucket.revenue)
-    )
-  );
-
   private readonly productsService = inject(ProductsService);
   private readonly ordersService = inject(OrdersService);
   private readonly destroyRef = inject(DestroyRef);
@@ -217,9 +215,8 @@ export class AdminDashboardPage implements OnInit {
     this.financialAnchor.set(startOfPeriod(period, new Date()));
   }
 
-  breakdownShare(bucket: RevenueBucket): number {
-    const max = this.financialBreakdownMax();
-    return max > 0 ? (bucket.revenue / max) * 100 : 0;
+  setFinancialChartType(type: FinancialChartType): void {
+    this.financialChartType.set(type);
   }
 
   formatMoney = formatPhp;
